@@ -1,0 +1,11 @@
+{
+  "name": "秘書りな — AI Secretary",
+  "short_name": "秘書りな",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#100e09",
+  "theme_color": "#d9b45e",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
