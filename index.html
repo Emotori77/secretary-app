@@ -1,0 +1,1916 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>秘書りな — Personal AI Secretary</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#7c74ff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="秘書りな" />
+  <link rel="apple-touch-icon" href="/icon.svg" />
+  <link rel="icon" href="/icon.svg" />
+  <style>
+    :root {
+      --accent: #9a7a2b;         /* 落ち着いたゴールド */
+      --accent-2: #c6a24d;       /* 明るいシャンパンゴールド */
+      --accent-soft: rgba(176,140,60,0.16);
+      --btn-bg: linear-gradient(135deg, #b08f3d, #8a6c22);
+      --btn-ink: #fffdf5;
+      --bg: #f5f1e8;             /* 温かみのあるアイボリー */
+      --bg-grad-1: rgba(198,162,77,0.18);
+      --bg-grad-2: rgba(120,100,60,0.08);
+      --panel: rgba(255,253,246,0.82);
+      --panel-solid: #fffdf6;
+      --card: rgba(255,253,246,0.82);
+      --ink: #211c11;            /* 濃いインク＝高コントラスト */
+      --ink-2: #4a4230;
+      --muted: #756b52;
+      --line: rgba(40,32,12,0.13);
+      --line-2: rgba(40,32,12,0.22);
+      --warn: #a4692a;           /* 落ち着いた警告色（強い赤は使わない） */
+      --warn-bg: rgba(190,130,50,0.15);
+      --ok: #4a8f5f;
+      --shadow: 0 12px 30px rgba(90,70,25,0.14);
+      --radius: 18px;
+    }
+    html[data-theme="dark"] {
+      --accent: #d9b45e;
+      --accent-2: #eccf88;
+      --accent-soft: rgba(216,180,94,0.18);
+      --btn-bg: linear-gradient(135deg, #eccf88, #d3ab52);
+      --btn-ink: #241d0a;
+      --bg: #100e09;
+      --bg-grad-1: rgba(216,180,94,0.16);
+      --bg-grad-2: rgba(120,95,50,0.10);
+      --panel: rgba(30,26,18,0.80);
+      --panel-solid: #1b1710;
+      --card: rgba(36,31,22,0.72);
+      --ink: #f5efe0;
+      --ink-2: #dcd4c0;
+      --muted: #a89e85;
+      --line: rgba(255,240,210,0.11);
+      --line-2: rgba(255,240,210,0.20);
+      --warn: #e2b365;
+      --warn-bg: rgba(216,170,90,0.16);
+      --ok: #6cc08d;
+      --shadow: 0 14px 36px rgba(0,0,0,0.55);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+      color: var(--ink); line-height: 1.6; -webkit-font-smoothing: antialiased;
+      background:
+        radial-gradient(1000px 600px at 88% -8%, var(--bg-grad-1), transparent 60%),
+        radial-gradient(900px 600px at -6% 4%, var(--bg-grad-2), transparent 55%),
+        var(--bg);
+      background-attachment: fixed;
+    }
+    button { font-family: inherit; cursor: pointer; }
+
+    /* ===== レイアウト ===== */
+    .app { display: grid; grid-template-columns: 244px 1fr; min-height: 100vh; }
+    /* サイドバー（PC） */
+    .sidebar {
+      position: sticky; top: 0; align-self: start; height: 100vh;
+      padding: 22px 16px; border-right: 1px solid var(--line);
+      display: flex; flex-direction: column; gap: 6px;
+      background: var(--panel); backdrop-filter: blur(14px);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; padding: 6px 8px 18px; }
+    .brand .name { font-weight: 700; letter-spacing: .04em; }
+    .brand .sub { font-size: 11px; color: var(--muted); letter-spacing: .12em; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 12px;
+      color: var(--ink-2); background: transparent; border: none; width: 100%; text-align: left;
+      font-size: 14px; font-weight: 600; transition: background .15s, color .15s;
+    }
+    .nav-item .ico { width: 22px; height: 22px; display: grid; place-items: center; color: var(--muted); }
+    .nav-item:hover { background: var(--accent-soft); }
+    .nav-item.active { background: var(--accent-soft); color: var(--accent); }
+    .nav-item.active .ico { color: var(--accent); }
+    .nav-item.rina { color: var(--ink); }
+    .sidebar .spacer { flex: 1; }
+    .theme-btn {
+      display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 12px;
+      background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); font-size: 13px; font-weight: 600;
+    }
+
+    /* メイン */
+    .main { min-width: 0; padding: 26px clamp(16px, 4vw, 40px) 120px; }
+    .container { max-width: 860px; margin: 0 auto; }
+
+    /* トップバー（モバイル時のみ表示のヘッダ） */
+    .topbar { display: none; }
+
+    /* ===== 下部ナビ（モバイル） ===== */
+    .bottomnav { display: none; }
+
+    /* ===== オーブ・アバター ===== */
+    .orb { position: relative; border-radius: 50%; flex: 0 0 auto; }
+    .orb .core {
+      position: absolute; inset: 0; border-radius: 50%;
+      background: radial-gradient(circle at 34% 30%, #ffffff, var(--accent-2) 42%, var(--accent) 78%);
+      box-shadow: 0 0 18px var(--accent-soft), 0 0 40px var(--accent-soft);
+    }
+    .orb .ring {
+      position: absolute; inset: -5px; border-radius: 50%;
+      border: 1.5px solid var(--accent); opacity: .5;
+      animation: ringPulse 3.4s ease-in-out infinite;
+    }
+    .orb .ring.r2 { inset: -10px; opacity: .28; animation-delay: .6s; }
+    @keyframes ringPulse { 0%,100%{ transform: scale(1); opacity:.5;} 50%{ transform: scale(1.06); opacity:.2;} }
+    .orb.thinking .core { animation: think 1.2s ease-in-out infinite; }
+    @keyframes think { 0%,100%{ filter: brightness(1);} 50%{ filter: brightness(1.25);} }
+    .orb.suggest .ring { border-color: var(--accent); animation-duration: 2s; }
+    .orb.alert .core { background: radial-gradient(circle at 34% 30%, #fff, #e6b978 45%, var(--warn) 82%); }
+    .orb.alert .ring { border-color: var(--warn); }
+    .orb.listening .ring { animation-duration: .9s; }
+
+    /* ===== 見出し・テキスト ===== */
+    .greeting { font-size: clamp(20px, 3.6vw, 27px); font-weight: 700; letter-spacing: .01em; margin: 4px 0 2px; }
+    .subline { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
+    .section-title { font-size: 13px; font-weight: 700; letter-spacing: .1em; color: var(--muted); margin: 26px 4px 12px; text-transform: uppercase; }
+
+    /* ===== カード ===== */
+    .card {
+      background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 18px; box-shadow: var(--shadow); backdrop-filter: blur(10px);
+    }
+    .grid { display: grid; gap: 14px; }
+    .grid.cols-2 { grid-template-columns: 1fr 1fr; }
+
+    /* 今やること（ヒーロー） */
+    .hero {
+      position: relative; overflow: hidden; padding: 22px;
+      background:
+        linear-gradient(135deg, var(--accent-soft), transparent 60%),
+        var(--panel-solid);
+      border: 1px solid var(--line-2);
+    }
+    .hero .tag { font-size: 11px; font-weight: 700; letter-spacing: .16em; color: var(--accent); text-transform: uppercase; }
+    .hero .htitle { font-size: clamp(19px, 3.4vw, 24px); font-weight: 800; margin: 8px 0 6px; line-height: 1.35; }
+    .hero .hmeta { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 16px; }
+    .hero .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .hero-empty { color: var(--ink-2); }
+
+    /* 進捗リング */
+    .prog { display: flex; align-items: center; gap: 16px; }
+    .ring-wrap { width: 74px; height: 74px; flex: 0 0 auto; }
+    .prog .big { font-size: 26px; font-weight: 800; }
+    .prog .lbl { font-size: 12px; color: var(--muted); }
+
+    /* pill / chip */
+    .pill { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; letter-spacing: .04em; white-space: nowrap; }
+    .pill.p-urgent { background: rgba(176,125,58,0.16); color: var(--warn); }
+    .pill.p-high { background: var(--accent-soft); color: var(--accent); }
+    .pill.p-mid { background: rgba(130,135,150,0.14); color: var(--ink-2); }
+    .pill.p-low { background: rgba(130,135,150,0.10); color: var(--muted); }
+    .chip { font-size: 11px; padding: 3px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+    .due { font-size: 12px; color: var(--ink-2); }
+    .due.overdue { color: var(--warn); background: var(--warn-bg); padding: 2px 9px; border-radius: 999px; }
+    .postpone { font-size: 11px; color: var(--warn); background: var(--warn-bg); padding: 2px 9px; border-radius: 999px; }
+
+    /* ボタン */
+    .btn {
+      border: none; border-radius: 12px; padding: 11px 18px; font-size: 14px; font-weight: 700;
+      background: var(--btn-bg); color: var(--btn-ink);
+      box-shadow: 0 8px 20px var(--accent-soft); transition: transform .08s, filter .15s;
+    }
+    .btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+    .btn:active { transform: translateY(0); }
+    .btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--line-2); box-shadow: none; }
+    .btn.ghost:hover { background: var(--accent-soft); }
+    .btn.sm { padding: 7px 13px; font-size: 12.5px; border-radius: 10px; box-shadow: none; }
+    .btn.subtle { background: transparent; color: var(--muted); border: 1px solid var(--line); box-shadow: none; }
+    .btn.subtle:hover { color: var(--warn); border-color: var(--line-2); }
+    .btn.danger { background: transparent; color: var(--warn); border: 1px solid var(--line); box-shadow: none; }
+    .btn.danger:hover { background: var(--warn-bg); }
+
+    /* 入力 */
+    input[type=text], input[type=date], input[type=time], input[type=number], textarea, select {
+      width: 100%; padding: 11px 13px; border: 1px solid var(--line-2); border-radius: 12px;
+      font-size: 14px; font-family: inherit; background: var(--panel-solid); color: var(--ink); margin-bottom: 10px;
+    }
+    textarea { resize: vertical; min-height: 68px; }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    label.fld { display: block; font-size: 12px; color: var(--muted); margin: 2px 2px 4px; font-weight: 600; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+    .form-grid .full { grid-column: 1 / -1; }
+    details.more > summary { cursor: pointer; color: var(--accent); font-size: 13px; font-weight: 600; margin: 2px 0 12px; list-style: none; }
+    details.more > summary::-webkit-details-marker { display: none; }
+    details.more > summary::before { content: "＋ "; }
+    details.more[open] > summary::before { content: "－ "; }
+
+    /* フィルタチップ */
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 16px; }
+    .filter {
+      font-size: 12.5px; font-weight: 600; padding: 7px 13px; border-radius: 999px;
+      border: 1px solid var(--line-2); background: transparent; color: var(--ink-2);
+    }
+    .filter.active { background: var(--accent); color: var(--btn-ink); border-color: var(--accent); }
+
+    /* リスト項目 */
+    .item {
+      display: flex; align-items: flex-start; gap: 13px; padding: 14px 16px; margin-bottom: 11px;
+      border: 1px solid var(--line); border-radius: 14px; background: var(--card); backdrop-filter: blur(8px);
+    }
+    .item.overdue { border-color: rgba(176,125,58,0.35); }
+    .item.done { opacity: .62; }
+    .check {
+      appearance: none; width: 22px; height: 22px; flex: 0 0 auto; margin-top: 1px;
+      border: 1.6px solid var(--accent); border-radius: 7px; background: var(--panel-solid); position: relative; cursor: pointer;
+    }
+    .check:checked { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: var(--accent); }
+    .check:checked::after { content: "✓"; color: var(--btn-ink); font-weight: 900; font-size: 13px; position: absolute; left: 4px; top: -1px; }
+    .item .body { flex: 1; min-width: 0; }
+    .item .t-title { font-weight: 700; }
+    .item.done .t-title { text-decoration: line-through; color: var(--muted); }
+    .item .t-detail { font-size: 13px; color: var(--ink-2); margin-top: 3px; white-space: pre-wrap; }
+    .item .metarow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 9px; }
+    .item .tools { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+    .subtasks { margin: 10px 0 2px; padding-left: 2px; }
+    .subtask { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--ink-2); padding: 3px 0; }
+    .subtask input { width: 17px; height: 17px; accent-color: var(--accent); }
+    .subtask.done span { text-decoration: line-through; color: var(--muted); }
+
+    .empty { text-align: center; color: var(--muted); font-size: 13.5px; padding: 30px 12px; border: 1px dashed var(--line-2); border-radius: 16px; }
+    .empty .o { margin: 0 auto 12px; }
+    .meta { font-size: 12px; color: var(--muted); }
+
+    .note-item, .review-item {
+      border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 12px;
+      padding: 14px 16px; margin-bottom: 11px; background: var(--card);
+    }
+    .note-item .nt { font-weight: 700; }
+    .note-item .nb, .review-item .rc { white-space: pre-wrap; color: var(--ink-2); font-size: 14px; margin: 6px 0; }
+    .review-item .rw { font-weight: 700; color: var(--accent); font-size: 13px; }
+    .week-tag { display: inline-block; font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 4px 12px; margin-bottom: 10px; }
+
+    /* 確認モーダル */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(10,12,20,0.5); backdrop-filter: blur(3px);
+      display: none; align-items: center; justify-content: center; padding: 20px; z-index: 50;
+    }
+    .overlay.show { display: flex; }
+    .modal {
+      width: 100%; max-width: 460px; background: var(--panel-solid); border: 1px solid var(--line-2);
+      border-radius: 20px; padding: 22px; box-shadow: var(--shadow);
+      max-height: 88vh; overflow: auto;
+    }
+    .filter .cnt { display: inline-block; margin-left: 6px; font-size: 11px; opacity: .8; }
+    .assist { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    .modal h3 { margin: 0 0 4px; font-size: 16px; }
+    .modal .lead { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+    .modal .proposal { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; font-size: 14px; }
+    .modal .btns { display: flex; gap: 10px; margin-top: 16px; }
+    .modal .btns .btn { flex: 1; }
+
+    /* トースト */
+    .toast {
+      position: fixed; left: 50%; bottom: 92px; transform: translateX(-50%) translateY(20px);
+      background: var(--panel-solid); border: 1px solid var(--line-2); border-radius: 14px;
+      padding: 12px 18px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 12px;
+      opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s; z-index: 60; font-size: 13.5px; max-width: 90vw;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .spark { width: 10px; height: 10px; border-radius: 50%; background: radial-gradient(circle, #fff, var(--accent)); box-shadow: 0 0 10px var(--accent); animation: spark 1s ease-out; }
+    @keyframes spark { 0%{ transform: scale(.4); opacity: 0; } 40%{ opacity: 1; } 100%{ transform: scale(1); } }
+
+    /* ローディング */
+    .skeleton { height: 84px; border-radius: 14px; background: linear-gradient(90deg, var(--card), var(--accent-soft), var(--card)); background-size: 200% 100%; animation: shimmer 1.4s infinite; margin-bottom: 11px; }
+    @keyframes shimmer { 0%{ background-position: 200% 0; } 100%{ background-position: -200% 0; } }
+
+    /* サブタブ */
+    .subtabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 18px; }
+    .subtab { padding: 8px 15px; border-radius: 999px; border: 1px solid var(--line-2); background: transparent; color: var(--ink-2); font-weight: 600; font-size: 13px; }
+    .subtab.active { background: var(--accent); color: var(--btn-ink); border-color: var(--accent); }
+
+    /* リマインダーバナー */
+    .banner { background: var(--warn-bg); border: 1px solid rgba(176,125,58,0.3); color: var(--warn); border-radius: 12px; padding: 11px 14px; margin-bottom: 14px; display: flex; gap: 10px; align-items: center; font-size: 13.5px; }
+    .banner .x { margin-left: auto; background: none; border: none; color: var(--warn); font-size: 16px; cursor: pointer; }
+
+    /* カレンダー */
+    .cal-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+    .cal-head .lbl { font-weight: 700; font-size: 16px; }
+    .cal-views { display: flex; gap: 6px; margin-left: auto; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+    .cal-dow { font-size: 11px; color: var(--muted); text-align: center; padding: 4px 0; font-weight: 600; }
+    .cal-cell { min-height: 78px; border: 1px solid var(--line); border-radius: 10px; padding: 6px; background: var(--card); cursor: pointer; overflow: hidden; }
+    .cal-cell.other { opacity: .38; }
+    .cal-cell.today { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+    .cal-cell .d { font-size: 12px; font-weight: 700; }
+    .cal-ev { font-size: 10px; background: var(--accent-soft); color: var(--accent); border-radius: 5px; padding: 1px 5px; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cal-ev.warn { background: var(--warn-bg); color: var(--warn); }
+    .ev-item { border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 12px; padding: 13px 15px; margin-bottom: 10px; background: var(--card); }
+    .ev-item.warn { border-left-color: var(--warn); }
+    .ev-time { font-weight: 700; color: var(--accent); font-size: 13px; }
+
+    /* りなの女性アバター（額装風） */
+    .rina-face { display: inline-block; flex: 0 0 auto; border-radius: 16px; padding: 2px; background: linear-gradient(160deg, var(--accent-2), var(--accent) 55%, #5b52cf); box-shadow: 0 8px 22px var(--accent-soft); }
+    .rina-face .inner { width: 100%; height: 100%; border-radius: 14px; overflow: hidden; background: radial-gradient(120% 90% at 50% 12%, #fbfaff, #eae6f7); display: grid; place-items: end center; }
+    html[data-theme="dark"] .rina-face .inner { background: radial-gradient(120% 90% at 50% 12%, #2a2c3a, #1a1c28); }
+    .rina-face svg { width: 96%; height: auto; display: block; }
+
+    /* チャット */
+    .chat-log { display: flex; flex-direction: column; gap: 10px; margin: 8px 0 12px; min-height: 120px; }
+    .msg.rina-row { display: flex; align-items: flex-end; gap: 8px; align-self: flex-start; max-width: 90%; background: none; border: none; padding: 0; }
+    .msg.rina-row .rina-face { width: 30px; height: 33px; }
+    .msg.rina-row .bubbletext { background: var(--card); border: 1px solid var(--line); border-radius: 16px; border-bottom-left-radius: 5px; padding: 11px 15px; font-size: 14px; white-space: pre-wrap; line-height: 1.55; }
+    .msg { max-width: 84%; padding: 11px 15px; border-radius: 16px; font-size: 14px; white-space: pre-wrap; line-height: 1.55; }
+    .msg.user { align-self: flex-end; background: var(--btn-bg); color: var(--btn-ink); border-bottom-right-radius: 5px; }
+    .msg.rina { align-self: flex-start; background: var(--card); border: 1px solid var(--line); border-bottom-left-radius: 5px; }
+    .chat-input { display: flex; gap: 10px; margin-top: 6px; }
+    .quick { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px; }
+    .quick button { font-size: 12.5px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line-2); background: transparent; color: var(--accent); font-weight: 600; }
+
+    /* 目標 */
+    .goal-item { border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 12px; background: var(--card); }
+    .goal-item .g-title { font-weight: 700; font-size: 15px; }
+    .pbar { height: 8px; border-radius: 999px; background: var(--line-2); overflow: hidden; margin: 10px 0 6px; }
+    .pbar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .3s; }
+
+    /* デイリー気分 */
+    .mood { display: flex; gap: 8px; margin-bottom: 10px; }
+    .mood button { flex: 1; padding: 9px 0; border-radius: 12px; border: 1px solid var(--line-2); background: var(--panel-solid); font-size: 20px; }
+    .mood button.sel { border-color: var(--accent); background: var(--accent-soft); transform: scale(1.05); }
+    .stars { display: flex; gap: 6px; }
+    .stars button { background: none; border: none; font-size: 22px; color: var(--line-2); }
+    .stars button.sel { color: var(--accent); }
+
+    /* トグルスイッチ */
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--line); }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-row .tl { font-size: 14px; } .toggle-row .td { font-size: 12px; color: var(--muted); }
+    .switch { width: 46px; height: 27px; border-radius: 999px; background: var(--line-2); position: relative; cursor: pointer; border: none; flex: 0 0 auto; transition: background .15s; }
+    .switch.on { background: var(--accent); }
+    .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 21px; height: 21px; border-radius: 50%; background: #fff; transition: left .15s; }
+    .switch.on::after { left: 22px; }
+
+    /* ナビの期限切れバッジ */
+    .navbadge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--warn); color: #fff; font-size: 10px; font-weight: 800; margin-left: 6px; }
+    .bn { position: relative; }
+    .bn .navbadge { position: absolute; top: -2px; right: 22%; margin: 0; }
+
+    /* フォーカスタイマー（25分集中） */
+    .focus { position: fixed; right: 18px; bottom: 92px; z-index: 55; width: 210px; background: var(--panel-solid); border: 1px solid var(--line-2); border-radius: 18px; padding: 16px; box-shadow: var(--shadow); display: none; }
+    .focus.show { display: block; animation: fade .25s ease; }
+    .focus .ftitle { font-size: 12px; color: var(--muted); }
+    .focus .fname { font-weight: 700; font-size: 13px; margin: 2px 0 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .focus .ftime { font-family: var(--serif); font-size: 34px; font-weight: 700; text-align: center; letter-spacing: .04em; }
+    .focus .fbar { height: 5px; border-radius: 999px; background: var(--line-2); overflow: hidden; margin: 10px 0 12px; }
+    .focus .fbar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+    .focus .fbtns { display: flex; gap: 8px; }
+    .focus .fbtns .btn { flex: 1; padding: 8px; font-size: 12.5px; }
+    @media (min-width: 861px) { .focus { bottom: 24px; } }
+
+    /* 全体検索 */
+    .search-overlay { position: fixed; inset: 0; background: rgba(10,12,20,0.5); backdrop-filter: blur(3px); display: none; align-items: flex-start; justify-content: center; padding: 60px 16px; z-index: 58; }
+    .search-overlay.show { display: flex; }
+    .search-panel { width: 100%; max-width: 560px; background: var(--panel-solid); border: 1px solid var(--line-2); border-radius: 18px; box-shadow: var(--shadow); overflow: hidden; max-height: 78vh; display: flex; flex-direction: column; }
+    .search-panel input { margin: 0; border: none; border-bottom: 1px solid var(--line); border-radius: 0; padding: 16px 18px; font-size: 16px; }
+    .search-panel input:focus { box-shadow: none; }
+    .search-results { overflow: auto; padding: 8px; }
+    .sr { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 12px; cursor: pointer; }
+    .sr:hover { background: var(--accent-soft); }
+    .sr .kind { font-size: 10px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 2px 8px; flex: 0 0 auto; }
+    .sr .txt { flex: 1; min-width: 0; }
+    .sr .txt .st { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sr .txt .ss { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .search-empty { padding: 26px; text-align: center; color: var(--muted); font-size: 13.5px; }
+    .icon-btn { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); border-radius: 12px; padding: 10px 12px; font-size: 14px; }
+    .icon-btn:hover { background: var(--accent-soft); color: var(--accent); }
+
+    .view { display: none; }
+    .view.active { display: block; animation: fade .25s ease; }
+    @keyframes fade { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: none; } }
+
+    /* ===== モバイル ===== */
+    @media (max-width: 860px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .main { padding: 16px 16px 108px; }
+      .topbar {
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        position: sticky; top: 0; z-index: 20; margin: -16px -16px 10px; padding: 12px 16px;
+        background: var(--panel); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line);
+      }
+      .topbar .tb-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+      .form-grid { grid-template-columns: 1fr; }
+      .grid.cols-2 { grid-template-columns: 1fr; }
+      .bottomnav {
+        display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
+        justify-content: space-around; align-items: flex-end;
+        padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); gap: 4px;
+        background: var(--panel); backdrop-filter: blur(16px); border-top: 1px solid var(--line);
+      }
+      .bn {
+        flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+        background: transparent; border: none; color: var(--muted); font-size: 10.5px; font-weight: 600; padding: 4px 0;
+      }
+      .bn .ico { width: 24px; height: 24px; display: grid; place-items: center; }
+      .bn.active { color: var(--accent); }
+      .bn.center { margin-top: -22px; }
+      .bn.center .orb-wrap { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center;
+        background: var(--panel-solid); border: 1px solid var(--line-2); box-shadow: var(--shadow); }
+      .bn.center.active { color: var(--accent); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- サイドバー（PC） -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="orb" style="width:30px;height:30px"><div class="core"></div><div class="ring"></div></div>
+        <div><div class="name">秘書りな</div><div class="sub">AI SECRETARY</div></div>
+      </div>
+      <button class="nav-item" onclick="openSearch()"><span class="ico">🔍</span>検索</button>
+      <button class="nav-item active" data-view="home" onclick="go('home')"><span class="ico">◱</span>ホーム</button>
+      <button class="nav-item" data-view="tasks" onclick="go('tasks')"><span class="ico">✓</span>タスク<span id="badge-tasks-side"></span></button>
+      <button class="nav-item rina" data-view="rina" onclick="go('rina')"><span class="ico">◎</span>りな</button>
+      <button class="nav-item" data-view="calendar" onclick="go('calendar')"><span class="ico">▦</span>予定</button>
+      <button class="nav-item" data-view="record" onclick="go('record')"><span class="ico">❏</span>記録</button>
+      <div class="spacer"></div>
+      <button class="theme-btn" onclick="toggleTheme()"><span id="theme-ico">◐</span><span id="theme-label">ダークモード</span></button>
+    </aside>
+
+    <!-- メイン -->
+    <main class="main">
+      <div class="topbar">
+        <div class="tb-brand">
+          <div class="orb" id="orb-top" style="width:26px;height:26px"><div class="core"></div><div class="ring"></div></div>
+          秘書りな
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="icon-btn" onclick="openSearch()">🔍</button>
+          <button class="theme-btn" style="padding:8px 12px" onclick="toggleTheme()"><span id="theme-ico2">◐</span></button>
+        </div>
+      </div>
+      <div class="container">
+
+        <!-- ========== ホーム（今日の司令室） ========== -->
+        <section class="view active" id="view-home"></section>
+
+        <!-- ========== タスク ========== -->
+        <section class="view" id="view-tasks"></section>
+
+        <!-- ========== りな（AIチャット・準備中） ========== -->
+        <section class="view" id="view-rina"></section>
+
+        <!-- ========== 予定（準備中） ========== -->
+        <section class="view" id="view-calendar"></section>
+
+        <!-- ========== 記録（メモ・振り返り） ========== -->
+        <section class="view" id="view-record"></section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- 下部ナビ（モバイル） -->
+  <nav class="bottomnav">
+    <button class="bn active" data-view="home" onclick="go('home')"><span class="ico">◱</span>ホーム</button>
+    <button class="bn" data-view="tasks" onclick="go('tasks')"><span class="ico">✓</span>タスク<span id="badge-tasks-bn"></span></button>
+    <button class="bn center" data-view="rina" onclick="go('rina')">
+      <span class="orb-wrap"><span class="orb" style="width:34px;height:34px"><span class="core"></span><span class="ring"></span></span></span>
+      りな
+    </button>
+    <button class="bn" data-view="calendar" onclick="go('calendar')"><span class="ico">▦</span>予定</button>
+    <button class="bn" data-view="record" onclick="go('record')"><span class="ico">❏</span>記録</button>
+  </nav>
+
+  <!-- 確認モーダル -->
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <h3 id="modal-title">確認</h3>
+      <p class="lead" id="modal-lead"></p>
+      <div id="modal-body"></div>
+      <div class="btns">
+        <button class="btn ghost" onclick="closeModal()">キャンセル</button>
+        <button class="btn" id="modal-ok">実行する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- フォーカスタイマー -->
+  <div class="focus" id="focus">
+    <div class="ftitle">集中中</div>
+    <div class="fname" id="focus-name">タスク</div>
+    <div class="ftime" id="focus-time">25:00</div>
+    <div class="fbar"><i id="focus-bar" style="width:0%"></i></div>
+    <div class="fbtns">
+      <button class="btn ghost" id="focus-toggle" onclick="toggleFocus()">一時停止</button>
+      <button class="btn subtle" onclick="stopFocus()">終了</button>
+    </div>
+  </div>
+
+  <!-- 全体検索 -->
+  <div class="search-overlay" id="search-overlay">
+    <div class="search-panel">
+      <input type="text" id="search-input" placeholder="🔍 タスク・メモ・予定・目標を検索…" oninput="runSearch(this.value)" onkeydown="if(event.key==='Escape')closeSearch()" />
+      <div class="search-results" id="search-results"></div>
+    </div>
+  </div>
+
+  <!-- トースト -->
+  <div class="toast" id="toast"><span class="spark"></span><span id="toast-msg"></span><button id="toast-action" class="btn sm ghost" style="display:none;padding:5px 11px"></button></div>
+
+  <script>
+    // ================= 定数・状態 =================
+    const API_BASE = location.protocol.startsWith('http') ? '' : 'http://localhost:3000';
+    const CATEGORIES = ['仕事', 'EmoTori', 'プライベート', '健康', 'お金', 'その他'];
+    const PRIORITIES = [
+      { v: 'urgent', l: '最優先' }, { v: 'high', l: '高' }, { v: 'mid', l: '中' }, { v: 'low', l: '低' },
+    ];
+    const PRI_LABEL = { urgent: '最優先', high: '高', mid: '中', low: '低' };
+    const PRI_RANK = { urgent: 0, high: 1, mid: 2, low: 3 };
+    const USER = '生田さま';
+
+    const state = {
+      data: null, view: 'home', taskFilter: 'all', loading: true,
+      recordTab: 'notes', calView: 'month', calCursor: new Date(),
+      noteSearch: '', noteSort: 'updated', chat: [], dailyComment: '',
+    };
+    // 通知設定の既定値
+    const DEFAULT_NOTIFY = { eventBefore: true, taskDue: true, overdue: true, morning: true, night: true, weekly: true, stale: true, morningTime: '08:00', nightTime: '21:00' };
+    function notifyPrefs() { return { ...DEFAULT_NOTIFY, ...((state.data && state.data.prefs && state.data.prefs.notify) || {}) }; }
+
+    // ================= 通信 =================
+    async function api(url, method = 'GET', body) {
+      const opt = { method, headers: { 'Content-Type': 'application/json' } };
+      if (body) opt.body = JSON.stringify(body);
+      const res = await fetch(API_BASE + url, opt);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '通信エラー');
+      return data;
+    }
+    async function loadData() {
+      state.loading = true; renderCurrent();
+      try {
+        state.data = await api('/api/data');
+      } catch (e) {
+        state.data = { notes: [], tasks: [], reviews: [], events: [], goals: [], dailyReviews: [], prefs: {} };
+        alert('データの読み込みに失敗しました: ' + e.message);
+      }
+      state.loading = false; renderCurrent();
+    }
+
+    // ================= ユーティリティ =================
+    function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function todayStr() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+    function fmtDateTime(iso) { const d = new Date(iso); return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+    function greetWord() { const h = new Date().getHours(); if (h < 5) return 'こんばんは'; if (h < 11) return 'おはようございます'; if (h < 18) return 'こんにちは'; return 'こんばんは'; }
+    function timeBand() { const h = new Date().getHours(); if (h < 11) return 'morning'; if (h < 18) return 'noon'; return 'night'; }
+
+    function taskDue(t) { if (!t.dueDate) return null; return new Date(t.dueDate + 'T' + (t.dueTime || '23:59') + ':00'); }
+    function isOverdue(t) { if (t.done || !t.dueDate) return false; return taskDue(t) < new Date(); }
+    function isToday(t) { return t.dueDate === todayStr(); }
+    function weekRange() {
+      const now = new Date(); const dow = (now.getDay() + 6) % 7;
+      const mon = new Date(now); mon.setDate(now.getDate() - dow); mon.setHours(0, 0, 0, 0);
+      const sun = new Date(mon); sun.setDate(mon.getDate() + 6); sun.setHours(23, 59, 59, 999);
+      return { mon, sun };
+    }
+    function isThisWeek(t) { if (!t.dueDate) return false; const d = taskDue(t); const { mon, sun } = weekRange(); return d >= mon && d <= sun; }
+    function dueLabel(t) {
+      if (!t.dueDate) return '';
+      const md = t.dueDate.slice(5).replace('-', '/');
+      const tm = t.dueTime ? ' ' + t.dueTime : '';
+      if (isToday(t)) return '今日' + tm;
+      return md + tm;
+    }
+
+    // データ・アクセサ
+    function events() { return state.data.events || []; }
+    function goals() { return state.data.goals || []; }
+    function dailies() { return state.data.dailyReviews || []; }
+    function notes() { return state.data.notes || []; }
+
+    // 日付ユーティリティ
+    function ymd(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+    function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+    function eventsOn(dateStr) { return events().filter((e) => e.date === dateStr).sort((a, b) => (a.startTime || '').localeCompare(b.startTime || '')); }
+    function timeToMin(t) { if (!t) return null; const [h, m] = t.split(':').map(Number); return h * 60 + m; }
+    function eventsOverlap(a, b) {
+      if (a.date !== b.date) return false;
+      const as = timeToMin(a.startTime), ae = timeToMin(a.endTime) ?? (as != null ? as + 60 : null);
+      const bs = timeToMin(b.startTime), be = timeToMin(b.endTime) ?? (bs != null ? bs + 60 : null);
+      if (as == null || bs == null) return false;
+      return as < be && bs < ae;
+    }
+    function hasOverlap(ev) { return events().some((e) => e.id !== ev.id && eventsOverlap(e, ev)); }
+    const MOODS = ['😞', '😕', '😐', '🙂', '😄'];
+
+    function incompleteTasks() { return (state.data.tasks || []).filter((t) => !t.done); }
+    function pickTopTask() {
+      const arr = incompleteTasks().slice();
+      arr.sort((a, b) => {
+        const ao = isOverdue(a) ? 0 : 1, bo = isOverdue(b) ? 0 : 1; if (ao !== bo) return ao - bo;
+        if (PRI_RANK[a.priority] !== PRI_RANK[b.priority]) return PRI_RANK[a.priority] - PRI_RANK[b.priority];
+        const ad = taskDue(a), bd = taskDue(b);
+        if (ad && bd) return ad - bd; if (ad) return -1; if (bd) return 1;
+        return (b.postponeCount || 0) - (a.postponeCount || 0);
+      });
+      return arr[0] || null;
+    }
+    function todayProgress() {
+      const tasks = state.data.tasks || [];
+      const set = tasks.filter((t) => (t.dueDate === todayStr()) || isOverdue(t) || (t.done && t.completedAt && t.completedAt.slice(0, 10) === todayStr()));
+      const done = set.filter((t) => t.done).length;
+      return { done, total: set.length, pct: set.length ? Math.round(done / set.length * 100) : 0 };
+    }
+    function suggestions() {
+      const tasks = state.data.tasks || []; const inc = incompleteTasks();
+      const out = [];
+      const overdue = inc.filter(isOverdue);
+      if (overdue.length) out.push(`期限を過ぎたタスクが ${overdue.length} 件あります。まず1件だけ、今日中に片づけませんか？`);
+      const stuck = inc.find((t) => (t.postponeCount || 0) >= 2);
+      if (stuck) out.push(`『${stuck.title}』は ${stuck.postponeCount} 回延期されています。25分だけ着手してみませんか？`);
+      const noDue = inc.filter((t) => !t.dueDate);
+      if (noDue.length >= 3) out.push(`期限未設定のタスクが ${noDue.length} 件あります。今日やる分だけ期限を決めましょうか。`);
+      if (timeBand() === 'night') out.push('本日もお疲れさまでした。3分だけ、今日の振り返りをしませんか？');
+      if (!inc.length && tasks.length) out.push('未完了のタスクはありません。よく整いています。');
+      if (!out.length) out.push('まずはタスクを1件、登録してみましょう。今日の一歩から始めます。');
+      return out.slice(0, 3);
+    }
+    function orbState() {
+      if (incompleteTasks().some(isOverdue)) return 'alert';
+      if (suggestions().length) return 'suggest';
+      return 'idle';
+    }
+
+    // ================= ナビ・テーマ =================
+    function go(view) {
+      state.view = view;
+      document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === 'view-' + view));
+      document.querySelectorAll('[data-view]').forEach((b) => b.classList.toggle('active', b.dataset.view === view));
+      renderCurrent();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    function toggleTheme() {
+      const cur = document.documentElement.getAttribute('data-theme');
+      const next = cur === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      try { localStorage.setItem('rina-theme', next); } catch (e) {}
+      const dark = next === 'dark';
+      document.getElementById('theme-label').textContent = dark ? 'ライトモード' : 'ダークモード';
+      const g = dark ? '☀' : '◐';
+      document.getElementById('theme-ico').textContent = g;
+      document.getElementById('theme-ico2').textContent = g;
+    }
+    (function initTheme() {
+      let t = 'light'; try { t = localStorage.getItem('rina-theme') || 'light'; } catch (e) {}
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+
+    function orbHTML(size, cls) { return `<span class="orb ${cls || ''}" style="width:${size}px;height:${size}px"><span class="core"></span><span class="ring"></span><span class="ring r2"></span></span>`; }
+    // りなの女性アバター（架空のオリジナル。以前のイラストを額装風で表示）
+    function rinaAvatar(size) {
+      return `<span class="rina-face" style="width:${size}px;height:${Math.round(size * 1.1)}px"><span class="inner">
+        <svg viewBox="0 0 120 128" xmlns="http://www.w3.org/2000/svg" aria-label="秘書のりな">
+          <defs>
+            <linearGradient id="rhair" x1="0" y1="0" x2="0.2" y2="1"><stop offset="0" stop-color="#4b3225"/><stop offset="0.5" stop-color="#38241a"/><stop offset="1" stop-color="#2b1a12"/></linearGradient>
+            <linearGradient id="rskin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe2cf"/><stop offset="1" stop-color="#f6c8a9"/></linearGradient>
+            <linearGradient id="rcardi" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3550"/><stop offset="1" stop-color="#26223a"/></linearGradient>
+            <radialGradient id="rblush" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ff9fb0" stop-opacity="0.7"/><stop offset="1" stop-color="#ff9fb0" stop-opacity="0"/></radialGradient>
+          </defs>
+          <path d="M27 60c0-25 14-42 33-42s33 17 33 42c0 20 3 42 5 58H22c2-16 5-38 5-58z" fill="url(#rhair)"/>
+          <path d="M22 128c1-16 12-27 26-31l12-3 12 3c14 4 25 15 26 31z" fill="url(#rcardi)"/>
+          <path d="M46 98c4 8 10 12 14 12s10-4 14-12l-14-5z" fill="#f4f1ea"/>
+          <path d="M60 100l-4 6 4 22 4-22z" fill="#e3ddce"/>
+          <path d="M52 84c0 8-1 12-2 15 3 4 17 4 20 0-1-3-2-7-2-15z" fill="url(#rskin)"/>
+          <path d="M52 90c3 4 13 4 16 0v-3c-4 3-12 3-16 0z" fill="#e8ac89" opacity=".6"/>
+          <path d="M36 56c0-17 10-30 24-30s24 13 24 30c0 19-11 33-24 33S36 75 36 56z" fill="url(#rskin)"/>
+          <ellipse cx="46" cy="66" rx="6" ry="4.5" fill="url(#rblush)"/><ellipse cx="74" cy="66" rx="6" ry="4.5" fill="url(#rblush)"/>
+          <path d="M44 50c4-2 10-2 13 0" fill="none" stroke="#3a2519" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M63 50c3-2 9-2 13 0" fill="none" stroke="#3a2519" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M45 58c3-3 10-3 13 0" fill="none" stroke="#2a1c14" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M62 58c3-3 10-3 13 0" fill="none" stroke="#2a1c14" stroke-width="1.2" stroke-linecap="round"/>
+          <ellipse cx="51.5" cy="59.5" rx="3.1" ry="3.7" fill="#43302340"/><circle cx="51.5" cy="60" r="2.7" fill="#4a3326"/><circle cx="51.5" cy="60" r="1.2" fill="#1c120c"/><circle cx="52.6" cy="58.8" r="0.9" fill="#fff"/>
+          <ellipse cx="68.5" cy="59.5" rx="3.1" ry="3.7" fill="#43302340"/><circle cx="68.5" cy="60" r="2.7" fill="#4a3326"/><circle cx="68.5" cy="60" r="1.2" fill="#1c120c"/><circle cx="69.6" cy="58.8" r="0.9" fill="#fff"/>
+          <path d="M46 57l-1.5-1.6M75 57l1.5-1.6" stroke="#2a1c14" stroke-width="1" stroke-linecap="round"/>
+          <path d="M59 62c-1 4-2 6-3 7 1 1.4 4 1.4 5 0" fill="none" stroke="#e0a888" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M52 76c3 3 13 3 16 0-2 3.5-5 5-8 5s-6-1.5-8-5z" fill="#d76a6f"/>
+          <path d="M52 76c4 1.5 12 1.5 16 0" fill="none" stroke="#b24f57" stroke-width="1" stroke-linecap="round"/>
+          <path d="M33 56c0-19 12-33 27-33s27 14 27 33c-2-7-5-11-8-13 1 4 0 8 0 8-2-7-6-11-10-13 2 5 1 10 1 10-3-6-7-9-10-10-3 1-7 4-10 10 0 0-1-5 1-10-4 2-8 6-10 13 0 0-1-4 0-8-3 2-6 6-8 13z" fill="url(#rhair)"/>
+          <path d="M37 52c-3 14-3 30-1 44" fill="none" stroke="#2b1a12" stroke-width="2" stroke-linecap="round" opacity=".5"/>
+          <path d="M83 52c3 14 3 30 1 44" fill="none" stroke="#2b1a12" stroke-width="2" stroke-linecap="round" opacity=".5"/>
+          <circle cx="38.5" cy="72" r="1.4" fill="#d4ac5c"/><circle cx="81.5" cy="72" r="1.4" fill="#d4ac5c"/>
+        </svg>
+      </span></span>`;
+    }
+    function ringSVG(pct) {
+      const r = 30, c = 2 * Math.PI * r, off = c * (1 - pct / 100);
+      return `<svg class="ring-wrap" viewBox="0 0 74 74"><circle cx="37" cy="37" r="${r}" fill="none" stroke="var(--line-2)" stroke-width="7"/><circle cx="37" cy="37" r="${r}" fill="none" stroke="var(--accent)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}" transform="rotate(-90 37 37)"/></svg>`;
+    }
+
+    // ================= レンダリング =================
+    function renderCurrent() {
+      if (!state.data && !state.loading) return;
+      // オーブ状態を全体に反映
+      const os = state.data ? orbState() : 'idle';
+      document.querySelectorAll('.orb').forEach((o) => { o.classList.remove('alert', 'suggest', 'thinking', 'listening'); if (os !== 'idle') o.classList.add(os); });
+      updateBadges();
+      if (state.view === 'home') renderHome();
+      else if (state.view === 'tasks') renderTasks();
+      else if (state.view === 'rina') renderRina();
+      else if (state.view === 'calendar') renderCalendar();
+      else if (state.view === 'record') renderRecord();
+    }
+
+    // ---------- ホーム（今日の司令室） ----------
+    function renderHome() {
+      const el = document.getElementById('view-home');
+      if (state.loading) { el.innerHTML = skeletons(3); return; }
+      const inc = incompleteTasks();
+      const top = pickTopTask();
+      const prog = todayProgress();
+      const sugg = suggestions();
+      const overdue = inc.filter(isOverdue);
+      const near = inc.filter((t) => !isOverdue(t) && t.dueDate && (isToday(t) || isThisWeek(t))).sort((a, b) => taskDue(a) - taskDue(b));
+      const latestReview = (state.data.reviews || [])[0];
+      const todayEvents = eventsOn(todayStr());
+      const goalCards = goals().slice(0, 2).map(goalMiniHTML).join('');
+      const banner = homeBanner();
+
+      // ブリーフィング文
+      let brief = `本日の未完了タスクは ${inc.length} 件です。`;
+      if (top) {
+        brief += ` 最優先は「${top.title}」です。`;
+        if ((top.postponeCount || 0) > 0) brief += ` このタスクは ${top.postponeCount} 回延期されています。まず25分だけ取り組みませんか？`;
+      } else {
+        brief = '本日の未完了タスクはありません。まずは今日やることを1件、決めましょう。';
+      }
+
+      el.innerHTML = `
+        ${banner}
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:6px">
+          ${orbHTML(42, orbState())}
+          <div>
+            <div class="greeting">${USER}、${greetWord()}。</div>
+            <div class="subline">${bandMessage()}</div>
+          </div>
+        </div>
+
+        <div class="card hero" style="margin-top:8px">
+          <div class="tag">今やること</div>
+          ${top ? `
+            <div class="htitle">${esc(top.title)}</div>
+            <div class="hmeta">
+              <span class="pill p-${top.priority}">${PRI_LABEL[top.priority]}</span>
+              <span class="chip">${esc(top.category)}</span>
+              ${top.dueDate ? `<span class="due ${isOverdue(top) ? 'overdue' : ''}">${isOverdue(top) ? '期限超過 ' : '期限 '}${dueLabel(top)}</span>` : ''}
+              ${top.estimateMin ? `<span class="meta">目安 ${top.estimateMin}分</span>` : ''}
+              ${(top.postponeCount || 0) > 0 ? `<span class="postpone">${top.postponeCount}回 延期中</span>` : ''}
+            </div>
+            <div class="actions">
+              <button class="btn" onclick="completeTask('${top.id}')">完了する</button>
+              <button class="btn ghost" onclick="startFocus('${top.id}')">25分だけ取り組む</button>
+              <button class="btn subtle" onclick="postponeTask('${top.id}')">明日に延期</button>
+            </div>` :
+        `<div class="hero-empty">今日の最優先タスクはまだありません。<br>「タスク」から今日やることを追加しましょう。</div>
+             <div class="actions" style="margin-top:14px"><button class="btn" onclick="go('tasks')">タスクを追加</button></div>`}
+        </div>
+
+        <div class="grid cols-2" style="margin-top:14px">
+          <div class="card">
+            <div class="prog">
+              ${ringSVG(prog.pct)}
+              <div><div class="big">${prog.pct}%</div><div class="lbl">${prog.total ? `本日 ${prog.done}/${prog.total} 完了` : '本日の対象タスクなし'}</div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="lbl" style="color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.08em">未完了タスク</div>
+            <div class="big" style="font-size:30px;font-weight:800;margin-top:6px">${inc.length}<span style="font-size:14px;color:var(--muted);font-weight:600"> 件</span></div>
+            ${overdue.length ? `<div class="due overdue" style="margin-top:8px;display:inline-block">期限超過 ${overdue.length} 件</div>` : ''}
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">${orbHTML(24, 'suggest')}<b style="font-size:14px">りなからのブリーフィング</b></div>
+          <div style="color:var(--ink-2);font-size:14px">${esc(brief)}</div>
+          <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+            ${sugg.map((s) => `<div style="display:flex;gap:8px;font-size:13.5px;color:var(--ink-2)"><span style="color:var(--accent)">•</span>${esc(s)}</div>`).join('')}
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">${orbHTML(24)}<b style="font-size:14px">りなに任せる</b></div>
+          <div class="meta">面倒な整理は、りながお手伝いします。変更は必ず確認してから行います。</div>
+          <div class="assist">
+            <button class="btn sm ghost" onclick="rinaPrioritize()">今日の優先順位を決める</button>
+            <button class="btn sm ghost" onclick="rinaSchedule()">空き時間に割り当てる</button>
+            <button class="btn sm ghost" onclick="rinaTidyOverdue()">期限切れを今日にまとめる</button>
+            <button class="btn sm ghost" onclick="go('rina')">りなに相談する</button>
+          </div>
+        </div>
+
+        ${overdue.length ? homeListCard('期限を過ぎたタスク', overdue, true) : ''}
+        ${near.length ? homeListCard('期限が近いタスク', near.slice(0, 4), false) : ''}
+
+        <div class="card" style="margin-top:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <b style="font-size:14px">今日の予定</b>
+            <button class="btn sm ghost" onclick="go('calendar')">予定へ</button>
+          </div>
+          ${todayEvents.length ? todayEvents.map((e) => `<div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)"><span class="ev-time">${e.startTime || '終日'}</span><div style="flex:1"><div style="font-weight:600">${esc(e.title)}</div>${e.place ? `<div class="meta">${esc(e.place)}</div>` : ''}</div></div>`).join('') : '<div class="meta">本日の予定はありません。</div>'}
+        </div>
+
+        ${goalCards.length ? `<div class="card" style="margin-top:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><b style="font-size:14px">目標</b><button class="btn sm ghost" onclick="go('record');setRecordTab('goals')">目標へ</button></div>
+          ${goalCards}
+        </div>` : ''}
+
+        <div class="card" style="margin-top:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <b style="font-size:14px">最新の振り返り</b>
+            <button class="btn sm ghost" onclick="go('record')">記録へ</button>
+          </div>
+          ${latestReview ? `<div class="review-item" style="margin:0"><div class="rw">${esc(latestReview.week)}</div><div class="rc">${esc(latestReview.comment)}</div><div class="meta">${fmtDateTime(latestReview.createdAt)}</div></div>` : '<div class="meta">まだ振り返りがありません。</div>'}
+        </div>
+      `;
+    }
+    function bandMessage() {
+      const b = timeBand();
+      if (b === 'morning') return '本日の予定と優先事項をまとめました。';
+      if (b === 'noon') return '午後の予定を確認しましょう。重要タスクを見ていきます。';
+      return '本日もお疲れさまでした。少しだけ振り返りましょう。';
+    }
+    function homeBanner() {
+      // 明日の予定（準備が必要なもの）を、りなが前日にお知らせ
+      const tmr = eventsOn(ymd(addDays(new Date(), 1)));
+      const withPrep = tmr.find((e) => e.prepare || e.items);
+      if (withPrep) {
+        const t = withPrep.startTime ? `${withPrep.startTime}から` : '';
+        const prep = [withPrep.prepare, withPrep.items].filter(Boolean).join('・');
+        return `<div class="banner">${orbHTML(22, 'alert')}<div>明日 ${esc(t)}「${esc(withPrep.title)}」です。${prep ? `${esc(prep)}の準備はできていますか？` : ''}</div><button class="x" onclick="this.parentElement.remove()">×</button></div>`;
+      }
+      // 今日これからの予定が近い場合
+      const now = new Date(); const soon = eventsOn(todayStr()).find((e) => { const m = timeToMin(e.startTime); return m != null && m - (now.getHours() * 60 + now.getMinutes()) > 0 && m - (now.getHours() * 60 + now.getMinutes()) <= 120; });
+      if (soon) return `<div class="banner">${orbHTML(22, 'suggest')}<div>まもなく ${esc(soon.startTime)}「${esc(soon.title)}」です。${soon.place ? '場所：' + esc(soon.place) : ''}</div><button class="x" onclick="this.parentElement.remove()">×</button></div>`;
+      return '';
+    }
+    function goalMiniHTML(g) {
+      return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:13.5px;font-weight:600"><span>${esc(g.title)}</span><span style="color:var(--accent)">${g.progress}%</span></div><div class="pbar"><i style="width:${g.progress}%"></i></div></div>`;
+    }
+    function homeListCard(title, arr, calm) {
+      return `<div class="card" style="margin-top:14px">
+        <b style="font-size:14px">${title}</b>
+        <div style="margin-top:10px">
+          ${arr.map((t) => `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)">
+            <button class="check" onclick="completeTask('${t.id}')" title="完了"></button>
+            <div style="flex:1;min-width:0"><div style="font-weight:600">${esc(t.title)}</div>
+            <div class="metarow" style="margin-top:4px"><span class="pill p-${t.priority}">${PRI_LABEL[t.priority]}</span>${t.dueDate ? `<span class="due ${isOverdue(t) ? 'overdue' : ''}">${dueLabel(t)}</span>` : ''}</div></div>
+          </div>`).join('')}
+        </div>
+      </div>`;
+    }
+
+    // ---------- タスク ----------
+    function renderTasks() {
+      const el = document.getElementById('view-tasks');
+      if (state.loading) { el.innerHTML = skeletons(4); return; }
+      const filters = [
+        { v: 'all', l: '未完了' }, { v: 'today', l: '今日' }, { v: 'week', l: '今週' },
+        { v: 'overdue', l: '期限切れ' }, { v: 'done', l: '完了済み' },
+        ...CATEGORIES.map((c) => ({ v: 'cat:' + c, l: c })),
+      ];
+      const list = filteredTasks();
+      el.innerHTML = `
+        <div class="greeting" style="font-size:22px">タスク</div>
+        <div class="subline">やることを整理し、りなが優先順位づけをお手伝いします。</div>
+
+        <div class="card">
+          <b style="font-size:14px">タスクを追加</b>
+          <div style="margin-top:12px">
+            <input type="text" id="t-title" placeholder="タスク名（例：EmoToriの画面構成を決める）" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addTask();}" />
+            <details class="more"><summary>詳細を設定</summary>
+              <textarea id="t-detail" placeholder="詳細・メモ"></textarea>
+              <div class="form-grid">
+                <div><label class="fld">期限日</label><input type="date" id="t-date" /></div>
+                <div><label class="fld">期限時刻</label><input type="time" id="t-time" /></div>
+                <div><label class="fld">優先度</label><select id="t-priority">${PRIORITIES.map((p) => `<option value="${p.v}" ${p.v === 'mid' ? 'selected' : ''}>${p.l}</option>`).join('')}</select></div>
+                <div><label class="fld">カテゴリ</label><select id="t-category">${CATEGORIES.map((c) => `<option>${c}</option>`).join('')}</select></div>
+                <div><label class="fld">予定所要時間（分）</label><input type="number" id="t-estimate" min="0" step="5" placeholder="例：25" /></div>
+                <div><label class="fld">繰り返し</label><select id="t-repeat"><option value="none">なし</option><option value="daily">毎日</option><option value="weekly">毎週</option><option value="monthly">毎月</option></select></div>
+                <div class="full"><label class="fld">関連する目標</label><input type="text" id="t-goal" placeholder="例：7月末までにEmoToriを完成させる" /></div>
+              </div>
+            </details>
+            <button class="btn" onclick="addTask()">＋ タスクを追加</button>
+          </div>
+        </div>
+
+        <div class="section-title">一覧</div>
+        <div class="filters">
+          ${filters.map((f) => { const n = countFor(f.v); return `<button class="filter ${state.taskFilter === f.v ? 'active' : ''}" onclick="setFilter('${f.v}')">${f.l}${n ? `<span class="cnt">${n}</span>` : ''}</button>`; }).join('')}
+        </div>
+        <div id="task-list">${list.length ? list.map(taskItemHTML).join('') : emptyBox('該当するタスクはありません。')}</div>
+      `;
+    }
+    // 重要度の並び（期限切れ→優先度→期限が近い→延期が多い順）
+    function importanceCmp(a, b) {
+      const ao = isOverdue(a) ? 0 : 1, bo = isOverdue(b) ? 0 : 1; if (ao !== bo) return ao - bo;
+      if (PRI_RANK[a.priority] !== PRI_RANK[b.priority]) return PRI_RANK[a.priority] - PRI_RANK[b.priority];
+      const ad = taskDue(a), bd = taskDue(b);
+      if (ad && bd) return ad - bd; if (ad) return -1; if (bd) return 1;
+      return (b.postponeCount || 0) - (a.postponeCount || 0);
+    }
+    function tasksFor(f) {
+      const tasks = state.data.tasks || [];
+      if (f === 'done') return tasks.filter((t) => t.done);
+      const inc = tasks.filter((t) => !t.done);
+      if (f === 'today') return inc.filter((t) => isToday(t) || isOverdue(t));
+      if (f === 'week') return inc.filter((t) => isThisWeek(t) || isOverdue(t));
+      if (f === 'overdue') return inc.filter(isOverdue);
+      if (f.startsWith('cat:')) return inc.filter((t) => t.category === f.slice(4));
+      return inc; // all
+    }
+    function countFor(f) { return tasksFor(f).length; }
+    function filteredTasks() {
+      const f = state.taskFilter; const arr = tasksFor(f).slice();
+      if (f === 'done') arr.sort((a, b) => new Date(b.completedAt || 0) - new Date(a.completedAt || 0));
+      else arr.sort(importanceCmp);
+      return arr;
+    }
+    function setFilter(v) { state.taskFilter = v; renderTasks(); }
+    function taskItemHTML(t) {
+      const over = isOverdue(t);
+      const big = (t.estimateMin && t.estimateMin >= 60) || (!t.subtasks.length && t.title.length >= 12);
+      return `<div class="item ${t.done ? 'done' : ''} ${over ? 'overdue' : ''}">
+        <input type="checkbox" class="check" ${t.done ? 'checked' : ''} onchange="toggleTask('${t.id}', this.checked)" />
+        <div class="body">
+          <div class="t-title">${esc(t.title)}</div>
+          ${t.detail ? `<div class="t-detail">${esc(t.detail)}</div>` : ''}
+          <div class="metarow">
+            <span class="pill p-${t.priority}">${PRI_LABEL[t.priority]}</span>
+            <span class="chip">${esc(t.category)}</span>
+            ${t.dueDate ? `<span class="due ${over ? 'overdue' : ''}">${over ? '期限超過 ' : '期限 '}${dueLabel(t)}</span>` : ''}
+            ${t.estimateMin ? `<span class="meta">目安 ${t.estimateMin}分</span>` : ''}
+            ${t.repeat !== 'none' ? `<span class="meta">🔁 ${({ daily: '毎日', weekly: '毎週', monthly: '毎月' })[t.repeat]}</span>` : ''}
+            ${(t.postponeCount || 0) > 0 ? `<span class="postpone">${t.postponeCount}回 延期</span>` : ''}
+            ${t.relatedGoal ? `<span class="meta">🎯 ${esc(t.relatedGoal)}</span>` : ''}
+          </div>
+          ${t.subtasks && t.subtasks.length ? `<div class="subtasks">${t.subtasks.map((s, i) => `<label class="subtask ${s.done ? 'done' : ''}"><input type="checkbox" ${s.done ? 'checked' : ''} onchange="toggleSub('${t.id}',${i},this.checked)"><span>${esc(s.title)}</span></label>`).join('')}</div>` : ''}
+          <div class="tools">
+            <button class="btn sm subtle" onclick="editTask('${t.id}')">編集</button>
+            ${!t.done ? `<button class="btn sm ghost" onclick="startFocus('${t.id}')">25分集中</button>` : ''}
+            ${!t.done ? `<button class="btn sm subtle" onclick="postponeTask('${t.id}')">明日に延期</button>` : ''}
+            ${!t.done && (!t.subtasks || !t.subtasks.length) ? `<button class="btn sm ghost" onclick="decompose('${t.id}')">りなに分解してもらう</button>` : ''}
+            <button class="btn sm danger" onclick="removeTask('${t.id}')">削除</button>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    // ---------- りな（AI秘書チャット・ルールベース版） ----------
+    function renderRina() {
+      const el = document.getElementById('view-rina');
+      if (!state.chat.length) {
+        state.chat.push({ who: 'rina', text: `${USER}、こんにちは。ご用件をどうぞ。予定やタスクの追加、今日やることの整理などをお手伝いします。` });
+      }
+      const quick = ['今日は何をすればいい？', '今週の予定を整理して', '最近できていないことを教えて', '明日10時にジムへ行く予定を追加して', '今週の振り返りをまとめて'];
+      el.innerHTML = `
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:6px">${rinaAvatar(52)}<div><div class="greeting" style="font-size:20px">りな</div><div class="subline" style="margin:0">自然な言葉で相談できます。データ変更は必ず確認します。</div></div></div>
+        <div class="card">
+          <div class="chat-log" id="chat-log">
+            ${state.chat.map((m) => m.who === 'rina'
+        ? `<div class="msg rina-row">${rinaAvatar(30)}<div class="bubbletext">${esc(m.text)}</div></div>`
+        : `<div class="msg user">${esc(m.text)}</div>`).join('')}
+          </div>
+          <div class="quick">${quick.map((q) => `<button onclick="sendChat(${JSON.stringify(q).replace(/"/g, '&quot;')})">${esc(q)}</button>`).join('')}</div>
+          <div class="chat-input">
+            <input type="text" id="chat-text" placeholder="りなに相談する…" onkeydown="if(event.key==='Enter'){event.preventDefault();sendChat(this.value);}" />
+            <button class="btn" onclick="sendChat(document.getElementById('chat-text').value)">送信</button>
+          </div>
+          <div class="meta" style="margin-top:10px">※ 現在はルールベースの簡易版です。LLMを接続すると、より自然な対話になります（キーはサーバー側に保存し、画面には出しません）。</div>
+        </div>`;
+      const log = document.getElementById('chat-log'); if (log) log.scrollTop = log.scrollHeight;
+    }
+
+    // ---------- 予定（カレンダー） ----------
+    function renderCalendar() {
+      const el = document.getElementById('view-calendar');
+      if (state.loading) { el.innerHTML = skeletons(3); return; }
+      const c = state.calCursor;
+      const views = [['month', '月'], ['week', '週'], ['day', '日']];
+      let label = '', body = '';
+      if (state.calView === 'month') {
+        label = `${c.getFullYear()}年 ${c.getMonth() + 1}月`;
+        body = monthGrid(c);
+      } else if (state.calView === 'week') {
+        const dow = (c.getDay() + 6) % 7; const mon = addDays(c, -dow);
+        label = `${mon.getMonth() + 1}/${mon.getDate()} 〜 ${addDays(mon, 6).getMonth() + 1}/${addDays(mon, 6).getDate()}`;
+        body = [...Array(7)].map((_, i) => dayBlock(addDays(mon, i))).join('');
+      } else {
+        label = `${c.getMonth() + 1}月${c.getDate()}日（${'日月火水木金土'[c.getDay()]}）`;
+        body = dayBlock(c, true);
+      }
+      el.innerHTML = `
+        <div class="greeting" style="font-size:22px">予定</div>
+        <div class="subline">カレンダーと予定管理。重複はやさしく警告します。</div>
+        <div class="card">
+          <b style="font-size:14px">予定を追加</b>
+          <div style="margin-top:12px">
+            <input type="text" id="e-title" placeholder="予定名（例：ハローワーク）" />
+            <div class="form-grid">
+              <div><label class="fld">日付</label><input type="date" id="e-date" value="${todayStr()}" /></div>
+              <div><label class="fld">場所</label><input type="text" id="e-place" placeholder="例：新宿" /></div>
+              <div><label class="fld">開始</label><input type="time" id="e-start" /></div>
+              <div><label class="fld">終了</label><input type="time" id="e-end" /></div>
+              <div><label class="fld">移動時間（分）</label><input type="number" id="e-travel" min="0" step="5" /></div>
+              <div><label class="fld">通知（分前）</label><input type="number" id="e-notify" min="0" step="5" value="30" /></div>
+              <div class="full"><label class="fld">持ち物</label><input type="text" id="e-items" placeholder="例：離職票・本人確認書類" /></div>
+              <div class="full"><label class="fld">準備すること</label><input type="text" id="e-prepare" placeholder="例：書類をそろえる" /></div>
+              <div class="full"><label class="fld">詳細</label><textarea id="e-detail" placeholder="メモ"></textarea></div>
+            </div>
+            <button class="btn" onclick="addEvent()">＋ 予定を追加</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <div class="cal-head">
+            <button class="btn sm subtle" onclick="calMove(-1)">‹</button>
+            <span class="lbl">${label}</span>
+            <button class="btn sm subtle" onclick="calMove(1)">›</button>
+            <button class="btn sm ghost" onclick="calToday()">今日</button>
+            <span class="cal-views">${views.map(([v, l]) => `<button class="btn sm ${state.calView === v ? '' : 'subtle'}" onclick="setCalView('${v}')">${l}</button>`).join('')}</span>
+          </div>
+          ${body}
+        </div>`;
+    }
+    function monthGrid(c) {
+      const first = new Date(c.getFullYear(), c.getMonth(), 1);
+      const startDow = (first.getDay() + 6) % 7; // 月曜始まり
+      const start = addDays(first, -startDow);
+      const dows = ['月', '火', '水', '木', '金', '土', '日'];
+      let cells = '';
+      for (let i = 0; i < 42; i++) {
+        const d = addDays(start, i); const ds = ymd(d);
+        const other = d.getMonth() !== c.getMonth();
+        const evs = eventsOn(ds);
+        const shown = evs.slice(0, 2).map((e) => `<div class="cal-ev ${hasOverlap(e) ? 'warn' : ''}">${esc((e.startTime ? e.startTime + ' ' : '') + e.title)}</div>`).join('');
+        const more = evs.length > 2 ? `<div class="cal-ev" style="background:transparent;color:var(--muted)">+${evs.length - 2}</div>` : '';
+        cells += `<div class="cal-cell ${other ? 'other' : ''} ${ds === todayStr() ? 'today' : ''}" onclick="openDay('${ds}')"><div class="d">${d.getDate()}</div>${shown}${more}</div>`;
+        if (i === 41 && d.getMonth() !== c.getMonth() && i % 7 === 6 && d > new Date(c.getFullYear(), c.getMonth() + 1, 0)) break;
+      }
+      return `<div class="cal-grid">${dows.map((w) => `<div class="cal-dow">${w}</div>`).join('')}${cells}</div>`;
+    }
+    function dayBlock(d, detailed) {
+      const ds = ymd(d); const evs = eventsOn(ds);
+      const head = `<div style="font-weight:700;font-size:13px;margin:14px 0 8px;color:${ds === todayStr() ? 'var(--accent)' : 'var(--ink)'}">${d.getMonth() + 1}/${d.getDate()}（${'日月火水木金土'[d.getDay()]}）</div>`;
+      if (!evs.length) return head + '<div class="meta" style="padding-bottom:6px">予定なし</div>';
+      return head + evs.map((e) => {
+        const ov = hasOverlap(e);
+        return `<div class="ev-item ${ov ? 'warn' : ''}">
+          <div style="display:flex;gap:10px"><span class="ev-time">${e.startTime || '終日'}${e.endTime ? '〜' + e.endTime : ''}</span><div style="flex:1"><div style="font-weight:700">${esc(e.title)}</div>
+          ${e.place ? `<div class="meta">📍 ${esc(e.place)}</div>` : ''}
+          ${(e.items || e.prepare) ? `<div class="meta">🧳 ${esc([e.prepare, e.items].filter(Boolean).join(' / '))}</div>` : ''}
+          ${detailed && e.detail ? `<div class="t-detail">${esc(e.detail)}</div>` : ''}
+          ${ov ? '<div class="meta" style="color:var(--warn)">⚠ 同じ時間帯に別の予定があります</div>' : ''}</div></div>
+          <div class="tools"><button class="btn sm subtle" onclick="editEvent('${e.id}')">編集</button><button class="btn sm danger" onclick="removeEvent('${e.id}')">削除</button></div>
+        </div>`;
+      }).join('');
+    }
+
+    // ---------- 記録（ハブ：メモ / デイリー / 週次 / 目標 / 通知） ----------
+    function setRecordTab(t) { state.recordTab = t; renderRecord(); }
+    function renderRecord() {
+      const el = document.getElementById('view-record');
+      if (state.loading) { el.innerHTML = skeletons(3); return; }
+      const tabs = [['notes', 'メモ'], ['daily', 'デイリー'], ['weekly', '週次'], ['goals', '目標'], ['notify', '通知'], ['data', 'データ']];
+      const inner = { notes: recordNotes, daily: recordDaily, weekly: recordWeekly, goals: recordGoals, notify: recordNotify, data: recordData }[state.recordTab]();
+      el.innerHTML = `
+        <div class="greeting" style="font-size:22px">記録</div>
+        <div class="subline">メモ・振り返り・目標・通知を、りなと一緒に管理します。</div>
+        <div class="subtabs">${tabs.map(([v, l]) => `<button class="subtab ${state.recordTab === v ? 'active' : ''}" onclick="setRecordTab('${v}')">${l}</button>`).join('')}</div>
+        ${inner}`;
+      if (state.recordTab === 'weekly') { const wt = document.getElementById('week-tag'); if (wt) wt.textContent = currentWeekLabel(); }
+    }
+    // メモ（検索・並び替え・カテゴリ・タグ・固定・整理）
+    function recordNotes() {
+      let list = notes().slice();
+      const q = state.noteSearch.trim().toLowerCase();
+      if (q) list = list.filter((n) => (n.title + ' ' + n.content + ' ' + (n.tags || []).join(' ')).toLowerCase().includes(q));
+      if (state.noteSort === 'created') list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      else list.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+      list.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)); // 固定を先頭に
+      return `
+        <div class="card">
+          <b style="font-size:14px">メモを追加</b>
+          <div style="margin-top:12px">
+            <input type="text" id="n-title" placeholder="タイトル（例：打ち合わせメモ）" />
+            <textarea id="n-content" placeholder="本文"></textarea>
+            <div class="form-grid">
+              <div><label class="fld">カテゴリ</label><input type="text" id="n-category" placeholder="例：仕事" value="未分類" /></div>
+              <div><label class="fld">タグ（カンマ区切り）</label><input type="text" id="n-tags" placeholder="例：重要, EmoTori" /></div>
+            </div>
+            <button class="btn" onclick="addNote()">＋ メモを追加</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin:16px 0 12px">
+          <input type="text" placeholder="🔍 メモを検索" value="${esc(state.noteSearch)}" oninput="onNoteSearch(this.value)" style="margin:0" id="n-search" />
+          <select onchange="state.noteSort=this.value;renderRecord()" style="margin:0;max-width:150px"><option value="updated" ${state.noteSort === 'updated' ? 'selected' : ''}>更新順</option><option value="created" ${state.noteSort === 'created' ? 'selected' : ''}>作成順</option></select>
+        </div>
+        <div>${list.length ? list.map((n) => `<div class="note-item" style="${n.pinned ? 'border-left-color:var(--warn)' : ''}">
+          <div style="display:flex;align-items:center;gap:8px"><div class="nt" style="flex:1">${n.pinned ? '📌 ' : ''}${esc(n.title) || '（無題）'}</div><span class="chip">${esc(n.category)}</span></div>
+          ${n.content ? `<div class="nb">${esc(n.content)}</div>` : ''}
+          ${(n.tags && n.tags.length) ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0">${n.tags.map((t) => `<span class="meta">#${esc(t)}</span>`).join('')}</div>` : ''}
+          <div class="meta" style="display:flex;align-items:center;gap:8px">更新 ${fmtDateTime(n.updatedAt)}
+            <span style="margin-left:auto;display:flex;gap:6px">
+              <button class="btn sm ghost" onclick="togglePin('${n.id}',${!n.pinned})">${n.pinned ? '固定解除' : '固定'}</button>
+              <button class="btn sm ghost" onclick="organizeNote('${n.id}')">りなに整理してもらう</button>
+              <button class="btn sm subtle" onclick="editNote('${n.id}')">編集</button>
+              <button class="btn sm danger" onclick="removeNote('${n.id}')">削除</button>
+            </span></div>
+        </div>`).join('') : emptyBox(q ? '一致するメモはありません。' : 'メモはまだありません。')}</div>`;
+    }
+    // デイリーレビュー
+    function recordDaily() {
+      window._mood = window._mood || 4; window._sat = window._sat || 4;
+      const list = dailies();
+      return `
+        <div class="card">
+          <b style="font-size:14px">今日の振り返り</b>
+          <div style="margin-top:12px">
+            <label class="fld">今日できたこと</label><textarea id="d-did" placeholder="例：司令室ホームを完成させた"></textarea>
+            <label class="fld">できなかったこと</label><textarea id="d-not" placeholder="例：通知機能に着手できなかった"></textarea>
+            <label class="fld">今日の気分</label>
+            <div class="mood" id="mood-row">${MOODS.map((m, i) => `<button class="${(window._mood === i + 1) ? 'sel' : ''}" onclick="pickMood(${i + 1})">${m}</button>`).join('')}</div>
+            <label class="fld">今日の満足度</label>
+            <div class="stars" id="sat-row">${[1, 2, 3, 4, 5].map((s) => `<button class="${window._sat >= s ? 'sel' : ''}" onclick="pickSat(${s})">★</button>`).join('')}</div>
+            <label class="fld" style="margin-top:10px">明日の最優先事項</label><input type="text" id="d-tomorrow" placeholder="例：予定機能のテスト" />
+            <label class="fld">自由記入</label><textarea id="d-free" placeholder="ひとこと"></textarea>
+            <button class="btn" onclick="addDaily()">保存する</button>
+          </div>
+        </div>
+        ${state.dailyComment ? `<div class="card" style="margin-top:14px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">${orbHTML(24, 'suggest')}<b style="font-size:14px">りなから</b></div><div style="color:var(--ink-2);font-size:14px">${esc(state.dailyComment)}</div></div>` : ''}
+        <div class="section-title">これまでの記録</div>
+        <div>${list.length ? list.map((d) => `<div class="note-item"><div style="display:flex;align-items:center;gap:8px"><b>${esc(d.date)}</b><span style="font-size:18px">${MOODS[(d.mood || 3) - 1]}</span><span class="meta">満足度 ${'★'.repeat(d.satisfaction || 0)}</span><button class="btn sm danger" style="margin-left:auto" onclick="removeDaily('${d.id}')">削除</button></div>
+          ${d.did ? `<div class="nb"><b>できた：</b>${esc(d.did)}</div>` : ''}${d.notDone ? `<div class="nb"><b>できなかった：</b>${esc(d.notDone)}</div>` : ''}${d.tomorrow ? `<div class="nb"><b>明日：</b>${esc(d.tomorrow)}</div>` : ''}${d.free ? `<div class="nb">${esc(d.free)}</div>` : ''}</div>`).join('') : emptyBox('まだデイリーレビューがありません。')}</div>`;
+    }
+    // 週次振り返り
+    function recordWeekly() {
+      const reviews = state.data.reviews || [];
+      return `
+        <div class="card">
+          <b style="font-size:14px">週次の振り返り</b>
+          <div style="margin-top:12px">
+            <span class="week-tag" id="week-tag"></span>
+            <textarea id="r-comment" placeholder="今週の振り返り（できたこと・反省・来週やること など）"></textarea>
+            <button class="btn" onclick="addReview()">＋ 振り返りを記録</button>
+          </div>
+        </div>
+        <div class="section-title">振り返り一覧</div>
+        <div>${reviews.length ? reviews.map((r) => `<div class="review-item"><div class="rw">${esc(r.week)}</div><div class="rc">${esc(r.comment)}</div><div class="meta" style="display:flex"><span>${fmtDateTime(r.createdAt)}</span><button class="btn sm danger" style="margin-left:auto" onclick="removeReview('${r.id}')">削除</button></div></div>`).join('') : emptyBox('振り返りはまだありません。')}</div>`;
+    }
+    // 目標
+    function recordGoals() {
+      const list = goals();
+      return `
+        <div class="card">
+          <b style="font-size:14px">目標を追加</b>
+          <div style="margin-top:12px">
+            <input type="text" id="g-title" placeholder="目標名（例：7月末までにEmoToriの試作品を完成させる）" />
+            <div class="form-grid">
+              <div class="full"><label class="fld">目的</label><input type="text" id="g-purpose" placeholder="なぜ達成したいか" /></div>
+              <div><label class="fld">期限</label><input type="date" id="g-due" /></div>
+              <div><label class="fld">カテゴリ</label><select id="g-category">${CATEGORIES.map((c) => `<option>${c}</option>`).join('')}</select></div>
+              <div class="full"><label class="fld">達成条件</label><input type="text" id="g-criteria" placeholder="例：主要3画面が動く" /></div>
+              <div class="full"><label class="fld">メモ</label><textarea id="g-memo" placeholder="補足"></textarea></div>
+            </div>
+            <button class="btn" onclick="addGoal()">＋ 目標を追加</button>
+          </div>
+        </div>
+        <div class="section-title">目標一覧</div>
+        <div>${list.length ? list.map((g) => `<div class="goal-item">
+          <div style="display:flex;align-items:center;gap:8px"><div class="g-title" style="flex:1">${esc(g.title)}</div><span class="chip">${esc(g.category)}</span></div>
+          ${g.purpose ? `<div class="meta" style="margin-top:4px">${esc(g.purpose)}</div>` : ''}
+          <div class="pbar"><i style="width:${g.progress}%"></i></div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)"><span>進捗 ${g.progress}%</span>${g.due ? `<span>・期限 ${esc(g.due)}</span>` : ''}${g.criteria ? `<span>・達成条件：${esc(g.criteria)}</span>` : ''}</div>
+          <div class="tools">
+            <button class="btn sm subtle" onclick="setGoalProgress('${g.id}',${Math.max(0, g.progress - 10)})">－10%</button>
+            <button class="btn sm subtle" onclick="setGoalProgress('${g.id}',${Math.min(100, g.progress + 10)})">＋10%</button>
+            <button class="btn sm ghost" onclick="planGoal('${g.id}')">りなに計画を作ってもらう</button>
+            <button class="btn sm subtle" onclick="editGoal('${g.id}')">編集</button>
+            <button class="btn sm danger" onclick="removeGoal('${g.id}')">削除</button>
+          </div>
+        </div>`).join('') : emptyBox('目標はまだありません。長期の目標を登録しましょう。')}</div>`;
+    }
+    // 通知設定
+    function recordNotify() {
+      const p = notifyPrefs();
+      const rows = [
+        ['eventBefore', '予定前の通知', '開始前に通知します'],
+        ['taskDue', 'タスク期限前の通知', '期限が近いタスクを知らせます'],
+        ['overdue', '期限切れ通知', '期限を過ぎたタスクを知らせます'],
+        ['morning', '毎朝のブリーフィング', ''],
+        ['night', '夜の振り返り', ''],
+        ['weekly', '週次振り返り', ''],
+        ['stale', '長期間放置しているタスク', ''],
+      ];
+      const perm = (typeof Notification !== 'undefined') ? Notification.permission : 'unsupported';
+      return `
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div><b style="font-size:14px">ブラウザ通知</b><div class="meta">状態：${perm === 'granted' ? '許可済み' : perm === 'denied' ? 'ブロック中' : '未許可'}</div></div>
+            <button class="btn sm ${perm === 'granted' ? 'subtle' : ''}" onclick="requestNotify()" ${perm === 'granted' ? 'disabled' : ''}>${perm === 'granted' ? '許可済み' : '通知を許可'}</button>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <b style="font-size:14px">通知の種類</b>
+          <div style="margin-top:6px">
+            ${rows.map(([k, l, d]) => `<div class="toggle-row"><div><div class="tl">${l}</div>${d ? `<div class="td">${d}</div>` : ''}</div><button class="switch ${p[k] ? 'on' : ''}" onclick="toggleNotify('${k}')"></button></div>`).join('')}
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <b style="font-size:14px">時刻</b>
+          <div class="form-grid" style="margin-top:10px">
+            <div><label class="fld">朝のブリーフィング</label><input type="time" value="${p.morningTime}" onchange="setNotifyTime('morningTime',this.value)" /></div>
+            <div><label class="fld">夜の振り返り</label><input type="time" value="${p.nightTime}" onchange="setNotifyTime('nightTime',this.value)" /></div>
+          </div>
+          <div class="meta">※ 通知はこのアプリを開いている間に届きます（Webアプリの制約）。</div>
+        </div>`;
+    }
+    // データ（バックアップ）
+    function recordData() {
+      const d = state.data;
+      const rows = [['tasks', 'タスク'], ['notes', 'メモ'], ['events', '予定'], ['goals', '目標'], ['dailyReviews', 'デイリー'], ['reviews', '週次']];
+      return `
+        <div class="card">
+          <b style="font-size:14px">現在のデータ</b>
+          <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px">
+            ${rows.map(([k, l]) => `<span class="chip">${l} ${(d[k] || []).length}</span>`).join('')}
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <b style="font-size:14px">バックアップ</b>
+          <div class="meta" style="margin:6px 0 12px">すべてのデータをファイルに書き出し／読み込みできます。機種変更や万一に備えて、ときどき書き出しておくと安心です。</div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px">
+            <button class="btn" onclick="exportData()">⬇ 書き出す（バックアップ）</button>
+            <button class="btn ghost" onclick="document.getElementById('import-file').click()">⬆ 読み込む（復元）</button>
+            <input type="file" id="import-file" accept="application/json,.json" style="display:none" onchange="importData(this)" />
+          </div>
+          <div class="meta" style="margin-top:10px">※ 読み込むと現在のデータは上書きされます（確認画面が出ます）。</div>
+        </div>`;
+    }
+
+    function skeletons(n) { return '<div class="skeleton"></div>'.repeat(n); }
+    function emptyBox(msg) { return `<div class="empty">${orbHTML(40)}<div style="margin-top:12px">${esc(msg)}</div></div>`; }
+    function currentWeekLabel() {
+      const now = new Date(); const dow = (now.getDay() + 6) % 7;
+      const mon = new Date(now); mon.setDate(now.getDate() - dow);
+      const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+      const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+      const dn = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - dn + 3);
+      const ft = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+      const wk = 1 + Math.round(((d - ft) / 86400000 - 3 + ((ft.getUTCDay() + 6) % 7)) / 7);
+      const md = (x) => `${x.getMonth() + 1}/${x.getDate()}`;
+      return `${mon.getFullYear()}年 第${wk}週（${md(mon)}〜${md(sun)}）`;
+    }
+
+    // ================= 操作（タスク） =================
+    function fieldVal(id) { const e = document.getElementById(id); return e ? e.value : ''; }
+    async function addTask() {
+      const title = fieldVal('t-title').trim();
+      if (!title) { alert('タスク名を入力してください'); return; }
+      const estimate = fieldVal('t-estimate');
+      const payload = {
+        title,
+        detail: fieldVal('t-detail').trim(),
+        dueDate: fieldVal('t-date'),
+        dueTime: fieldVal('t-time'),
+        priority: fieldVal('t-priority') || 'mid',
+        category: fieldVal('t-category') || 'その他',
+        estimateMin: estimate ? Number(estimate) : null,
+        repeat: fieldVal('t-repeat') || 'none',
+        relatedGoal: fieldVal('t-goal').trim(),
+      };
+      try { await api('/api/tasks', 'POST', payload); await refresh(); toast('タスクを追加しました。'); }
+      catch (e) { alert('追加に失敗しました: ' + e.message); }
+    }
+    async function toggleTask(id, done) {
+      try { await api('/api/tasks/' + id, 'PATCH', { done }); await refresh(); if (done) toast(completeMsg(), { label: '取り消す', fn: () => toggleTask(id, false) }); }
+      catch (e) { alert('更新に失敗しました: ' + e.message); }
+    }
+    // 削除の取り消し（元のデータを再登録）
+    async function restore(url, obj) {
+      try { await api(url, 'POST', obj); await refresh(); toast('元に戻しました。'); }
+      catch (e) { alert('復元に失敗しました: ' + e.message); }
+    }
+    async function completeTask(id) { await toggleTask(id, true); }
+    function completeMsg() {
+      const inc = incompleteTasks().length;
+      return inc ? `完了しました。残りの未完了は ${inc} 件です。` : '完了しました。本日の対象はすべて片づきました。';
+    }
+    async function postponeTask(id) {
+      try { await api('/api/tasks/' + id, 'PATCH', { postpone: true }); await refresh(); toast('明日に延期しました。無理のない範囲で進めましょう。'); }
+      catch (e) { alert('延期に失敗しました: ' + e.message); }
+    }
+    // りなに任せる：今日の優先順位を提案（データは変更しない）
+    function rinaPrioritize() {
+      const arr = incompleteTasks().slice().sort(importanceCmp).slice(0, 5);
+      if (!arr.length) { toast('未完了のタスクはありません。よく整っています。'); return; }
+      const body = arr.map((t, i) => `<div class="proposal">${i + 1}. ${esc(t.title)}　<span class="meta">${PRI_LABEL[t.priority]}${t.dueDate ? '・' + dueLabel(t) : ''}</span></div>`).join('');
+      openModal({
+        title: '今日の優先順位です', lead: 'この順番で進めると効率的です。上から1件ずつ、まず25分だけ。', bodyHTML: body,
+        okLabel: '最優先だけ表示', onOk: () => { closeModal(); go('home'); toast(`最優先は「${arr[0].title}」です。`); },
+      });
+    }
+    // りなに任せる：今日の空き時間にタスクを割り当てる（今日の予定を避けて配置）
+    function rinaSchedule() {
+      const now = new Date();
+      const startMin = Math.max(now.getHours() * 60 + now.getMinutes(), 9 * 60);
+      const endMin = 21 * 60;
+      const busy = eventsOn(todayStr()).filter((e) => timeToMin(e.startTime) != null)
+        .map((e) => { const s = timeToMin(e.startTime); return [s, timeToMin(e.endTime) ?? s + 60]; }).sort((a, b) => a[0] - b[0]);
+      const tasks = incompleteTasks().slice().sort(importanceCmp);
+      const plan = []; let cur = startMin;
+      for (const t of tasks) {
+        const dur = t.estimateMin || 30; let placed = false;
+        while (cur + dur <= endMin) {
+          const hit = busy.find(([s, e]) => cur < e && s < cur + dur);
+          if (hit) { cur = hit[1]; continue; }
+          plan.push({ task: t, start: cur, end: cur + dur }); cur += dur; placed = true; break;
+        }
+        if (!placed || plan.length >= 6) break;
+      }
+      if (!plan.length) { toast('今日の空き時間に割り当てられるタスクがありません。'); return; }
+      const fmt = (m) => pad(Math.floor(m / 60)) + ':' + pad(m % 60);
+      const body = plan.map((p) => `<div class="proposal">${fmt(p.start)}–${fmt(p.end)}　${esc(p.task.title)}<span class="meta">（${p.task.estimateMin || 30}分）</span></div>`).join('');
+      openModal({
+        title: '空き時間に割り当てますか？', lead: '今日の予定を避けて時間を割り当てました。各タスクの期限を今日のこの時刻に設定します。', bodyHTML: body, okLabel: 'この予定で設定',
+        onOk: async () => {
+          try { for (const p of plan) await api('/api/tasks/' + p.task.id, 'PATCH', { dueDate: todayStr(), dueTime: fmt(p.start) }); await refresh(); closeModal(); toast('空き時間にタスクを割り当てました。'); }
+          catch (e) { alert('割り当てに失敗しました: ' + e.message); }
+        },
+      });
+    }
+    // りなに任せる：期限切れタスクを今日にまとめる（確認後に変更）
+    function rinaTidyOverdue() {
+      const over = incompleteTasks().filter(isOverdue);
+      if (!over.length) { toast('期限切れのタスクはありません。'); return; }
+      const body = over.map((t) => `<div class="proposal">・${esc(t.title)}<span class="meta">（現在 ${dueLabel(t)}）</span></div>`).join('');
+      openModal({
+        title: '期限切れを今日にまとめますか？', lead: `${over.length} 件の期限を「今日」に付け直します。落ち着いて片づけていきましょう。`, bodyHTML: body,
+        okLabel: '今日にまとめる',
+        onOk: async () => {
+          try { for (const t of over) await api('/api/tasks/' + t.id, 'PATCH', { dueDate: todayStr() }); await refresh(); closeModal(); toast(`${over.length} 件を今日に整理しました。`); }
+          catch (e) { alert('整理に失敗しました: ' + e.message); }
+        },
+      });
+    }
+    async function toggleSub(taskId, index, done) {
+      const t = state.data.tasks.find((x) => x.id === taskId); if (!t) return;
+      const subs = t.subtasks.map((s, i) => i === index ? { ...s, done } : s);
+      try { await api('/api/tasks/' + taskId, 'PATCH', { subtasks: subs }); await refresh(); }
+      catch (e) { alert('更新に失敗しました: ' + e.message); }
+    }
+    async function removeTask(id) {
+      const t = state.data.tasks.find((x) => x.id === id);
+      try { await api('/api/tasks/' + id, 'DELETE'); await refresh(); toast('タスクを削除しました。', t ? { label: '取り消す', fn: () => restore('/api/tasks', t) } : null); }
+      catch (e) { alert('削除に失敗しました: ' + e.message); }
+    }
+    // タスクを編集
+    function editTask(id) {
+      const t = state.data.tasks.find((x) => x.id === id); if (!t) return;
+      const repeats = [['none', 'なし'], ['daily', '毎日'], ['weekly', '毎週'], ['monthly', '毎月']];
+      const body = `
+        <label class="fld">タスク名</label><input type="text" id="et-title" value="${esc(t.title)}" />
+        <label class="fld">詳細</label><textarea id="et-detail">${esc(t.detail)}</textarea>
+        <div class="form-grid">
+          <div><label class="fld">期限日</label><input type="date" id="et-date" value="${esc(t.dueDate)}" /></div>
+          <div><label class="fld">期限時刻</label><input type="time" id="et-time" value="${esc(t.dueTime)}" /></div>
+          <div><label class="fld">優先度</label><select id="et-priority">${PRIORITIES.map((p) => `<option value="${p.v}" ${p.v === t.priority ? 'selected' : ''}>${p.l}</option>`).join('')}</select></div>
+          <div><label class="fld">カテゴリ</label><select id="et-category">${CATEGORIES.map((c) => `<option ${c === t.category ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+          <div><label class="fld">所要時間（分）</label><input type="number" id="et-estimate" min="0" step="5" value="${t.estimateMin ?? ''}" /></div>
+          <div><label class="fld">繰り返し</label><select id="et-repeat">${repeats.map(([v, l]) => `<option value="${v}" ${v === t.repeat ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+          <div class="full"><label class="fld">関連する目標</label><input type="text" id="et-goal" value="${esc(t.relatedGoal)}" /></div>
+        </div>`;
+      openModal({
+        title: 'タスクを編集', lead: '内容を修正して保存します。', bodyHTML: body, okLabel: '保存する',
+        onOk: async () => {
+          const title = fieldVal('et-title').trim();
+          if (!title) { alert('タスク名を入力してください'); return; }
+          const est = fieldVal('et-estimate');
+          const payload = {
+            title, detail: fieldVal('et-detail'), dueDate: fieldVal('et-date'), dueTime: fieldVal('et-time'),
+            priority: fieldVal('et-priority'), category: fieldVal('et-category'),
+            estimateMin: est ? Number(est) : null, repeat: fieldVal('et-repeat'), relatedGoal: fieldVal('et-goal'),
+          };
+          try { await api('/api/tasks/' + id, 'PATCH', payload); await refresh(); closeModal(); toast('タスクを更新しました。'); }
+          catch (e) { alert('更新に失敗しました: ' + e.message); }
+        },
+      });
+    }
+    // りなに分解してもらう（第1段階はルールベースの下書き。確認後に登録）
+    function decompose(id) {
+      const t = state.data.tasks.find((x) => x.id === id); if (!t) return;
+      const subs = decomposeHeuristic(t);
+      openModal({
+        title: 'りなの分解案を追加しますか？',
+        lead: `「${t.title}」を、取り組みやすい小さなステップに分けました。ご確認ください。`,
+        bodyHTML: subs.map((s) => `<div class="proposal">・${esc(s)}</div>`).join(''),
+        okLabel: '追加する',
+        onOk: async () => {
+          const subtasks = subs.map((s) => ({ title: s, done: false }));
+          try { await api('/api/tasks/' + id, 'PATCH', { subtasks }); await refresh(); closeModal(); toast('サブタスクに分解しました。まず最初の一歩から。'); }
+          catch (e) { alert('登録に失敗しました: ' + e.message); }
+        },
+      });
+    }
+    function decomposeHeuristic(t) {
+      const name = t.title;
+      return [
+        `${name}：目的と「完了の条件」を1行で書き出す`,
+        `必要な情報・材料をそろえる`,
+        `25分だけ集中して、たたき台を作る`,
+        `見直して整え、仕上げる`,
+      ];
+    }
+
+    // ================= 操作（メモ・振り返り） =================
+    async function addNote() {
+      const title = fieldVal('n-title'), content = fieldVal('n-content');
+      if (!title.trim() && !content.trim()) { alert('タイトルまたは本文を入力してください'); return; }
+      const tags = fieldVal('n-tags').split(',').map((s) => s.trim()).filter(Boolean);
+      try { await api('/api/notes', 'POST', { title, content, category: fieldVal('n-category') || '未分類', tags }); await refresh(); toast('メモを追加しました。'); }
+      catch (e) { alert('追加に失敗しました: ' + e.message); }
+    }
+    // メモを編集
+    function editNote(id) {
+      const n = notes().find((x) => x.id === id); if (!n) return;
+      const body = `
+        <label class="fld">タイトル</label><input type="text" id="en-title" value="${esc(n.title)}" />
+        <label class="fld">本文</label><textarea id="en-content">${esc(n.content)}</textarea>
+        <div class="form-grid">
+          <div><label class="fld">カテゴリ</label><input type="text" id="en-category" value="${esc(n.category)}" /></div>
+          <div><label class="fld">タグ（カンマ区切り）</label><input type="text" id="en-tags" value="${esc((n.tags || []).join(', '))}" /></div>
+        </div>`;
+      openModal({
+        title: 'メモを編集', lead: '内容を修正して保存します。', bodyHTML: body, okLabel: '保存する',
+        onOk: async () => {
+          const title = fieldVal('en-title').trim(), content = fieldVal('en-content').trim();
+          if (!title && !content) { alert('タイトルまたは本文を入力してください'); return; }
+          const tags = fieldVal('en-tags').split(',').map((s) => s.trim()).filter(Boolean);
+          try { await api('/api/notes/' + id, 'PATCH', { title, content, category: fieldVal('en-category') || '未分類', tags }); await refresh(); renderRecord(); closeModal(); toast('メモを更新しました。'); }
+          catch (e) { alert('更新に失敗しました: ' + e.message); }
+        },
+      });
+    }
+    async function removeNote(id) {
+      const n = notes().find((x) => x.id === id);
+      try { await api('/api/notes/' + id, 'DELETE'); await refresh(); toast('メモを削除しました。', n ? { label: '取り消す', fn: () => restore('/api/notes', n) } : null); }
+      catch (e) { alert('削除に失敗しました: ' + e.message); }
+    }
+    async function addReview() {
+      const comment = fieldVal('r-comment');
+      if (!comment.trim()) { alert('振り返りコメントを入力してください'); return; }
+      try { await api('/api/reviews', 'POST', { week: currentWeekLabel(), comment }); await refresh(); toast('週次の振り返りを記録しました。'); }
+      catch (e) { alert('記録に失敗しました: ' + e.message); }
+    }
+    async function removeReview(id) {
+      if (!confirm('この振り返りを削除しますか？')) return;
+      try { await api('/api/reviews/' + id, 'DELETE'); await refresh(); }
+      catch (e) { alert('削除に失敗しました: ' + e.message); }
+    }
+
+    // ================= 予定（カレンダー） =================
+    function setCalView(v) { state.calView = v; renderCalendar(); }
+    function calMove(dir) {
+      const c = state.calCursor;
+      if (state.calView === 'month') state.calCursor = new Date(c.getFullYear(), c.getMonth() + dir, 1);
+      else if (state.calView === 'week') state.calCursor = addDays(c, dir * 7);
+      else state.calCursor = addDays(c, dir);
+      renderCalendar();
+    }
+    function calToday() { state.calCursor = new Date(); renderCalendar(); }
+    function openDay(ds) { state.calCursor = new Date(ds + 'T00:00:00'); state.calView = 'day'; renderCalendar(); }
+    async function addEvent() {
+      const title = fieldVal('e-title').trim();
+      const date = fieldVal('e-date');
+      if (!title) { alert('予定名を入力してください'); return; }
+      if (!date) { alert('日付を入力してください'); return; }
+      const travel = fieldVal('e-travel'), notify = fieldVal('e-notify');
+      const payload = {
+        title, date, startTime: fieldVal('e-start'), endTime: fieldVal('e-end'),
+        place: fieldVal('e-place'), items: fieldVal('e-items'), prepare: fieldVal('e-prepare'),
+        detail: fieldVal('e-detail'), travelMin: travel ? Number(travel) : null, notifyMin: notify ? Number(notify) : null,
+      };
+      // 重複チェック（やさしく警告）
+      const conflict = events().some((e) => eventsOverlap(e, { ...payload }));
+      const doAdd = async () => {
+        try { await api('/api/events', 'POST', payload); await refresh(); state.calCursor = new Date(date + 'T00:00:00'); if (state.calView === 'month') {} renderCalendar(); toast('予定を追加しました。'); }
+        catch (e) { alert('追加に失敗しました: ' + e.message); }
+      };
+      if (conflict) {
+        openModal({ title: '予定が重複しています', lead: '同じ時間帯に別の予定があります。それでも追加しますか？', bodyHTML: `<div class="proposal">${esc(title)}（${esc(date)} ${esc(payload.startTime || '')}）</div>`, okLabel: '追加する', onOk: async () => { await doAdd(); closeModal(); } });
+      } else { await doAdd(); }
+    }
+    async function removeEvent(id) {
+      const ev = events().find((x) => x.id === id);
+      try { await api('/api/events/' + id, 'DELETE'); await refresh(); renderCalendar(); toast('予定を削除しました。', ev ? { label: '取り消す', fn: () => restore('/api/events', ev) } : null); }
+      catch (e) { alert('削除に失敗しました: ' + e.message); }
+    }
+    // 予定を編集
+    function editEvent(id) {
+      const ev = events().find((x) => x.id === id); if (!ev) return;
+      const body = `
+        <label class="fld">予定名</label><input type="text" id="ee-title" value="${esc(ev.title)}" />
+        <div class="form-grid">
+          <div><label class="fld">日付</label><input type="date" id="ee-date" value="${esc(ev.date)}" /></div>
+          <div><label class="fld">場所</label><input type="text" id="ee-place" value="${esc(ev.place)}" /></div>
+          <div><label class="fld">開始</label><input type="time" id="ee-start" value="${esc(ev.startTime)}" /></div>
+          <div><label class="fld">終了</label><input type="time" id="ee-end" value="${esc(ev.endTime)}" /></div>
+          <div class="full"><label class="fld">持ち物</label><input type="text" id="ee-items" value="${esc(ev.items)}" /></div>
+          <div class="full"><label class="fld">準備すること</label><input type="text" id="ee-prepare" value="${esc(ev.prepare)}" /></div>
+          <div class="full"><label class="fld">詳細</label><textarea id="ee-detail">${esc(ev.detail)}</textarea></div>
+        </div>`;
+      openModal({
+        title: '予定を編集', lead: '内容を修正して保存します。', bodyHTML: body, okLabel: '保存する',
+        onOk: async () => {
+          const title = fieldVal('ee-title').trim(); if (!title) { alert('予定名を入力してください'); return; }
+          const payload = { title, date: fieldVal('ee-date'), place: fieldVal('ee-place'), startTime: fieldVal('ee-start'), endTime: fieldVal('ee-end'), items: fieldVal('ee-items'), prepare: fieldVal('ee-prepare'), detail: fieldVal('ee-detail') };
+          try { await api('/api/events/' + id, 'PATCH', payload); await refresh(); renderCalendar(); closeModal(); toast('予定を更新しました。'); }
+          catch (e) { alert('更新に失敗しました: ' + e.message); }
+        },
+      });
+    }
+
+    // ================= 目標 =================
+    async function addGoal() {
+      const title = fieldVal('g-title').trim();
+      if (!title) { alert('目標名を入力してください'); return; }
+      const payload = { title, purpose: fieldVal('g-purpose'), due: fieldVal('g-due'), category: fieldVal('g-category') || 'その他', criteria: fieldVal('g-criteria'), memo: fieldVal('g-memo') };
+      try { await api('/api/goals', 'POST', payload); await refresh(); renderRecord(); toast('目標を追加しました。'); }
+      catch (e) { alert('追加に失敗しました: ' + e.message); }
+    }
+    async function setGoalProgress(id, v) {
+      try { await api('/api/goals/' + id, 'PATCH', { progress: v }); await refresh(); renderRecord(); }
+      catch (e) { alert('更新に失敗しました: ' + e.message); }
+    }
+    async function removeGoal(id) {
+      const g = goals().find((x) => x.id === id);
+      try { await api('/api/goals/' + id, 'DELETE'); await refresh(); renderRecord(); toast('目標を削除しました。', g ? { label: '取り消す', fn: () => restore('/api/goals', g) } : null); }
+      catch (e) { alert('削除に失敗しました: ' + e.message); }
+    }
+    // 目標を編集
+    function editGoal(id) {
+      const g = goals().find((x) => x.id === id); if (!g) return;
+      const body = `
+        <label class="fld">目標名</label><input type="text" id="eg-title" value="${esc(g.title)}" />
+        <label class="fld">目的</label><input type="text" id="eg-purpose" value="${esc(g.purpose)}" />
+        <div class="form-grid">
+          <div><label class="fld">期限</label><input type="date" id="eg-due" value="${esc(g.due)}" /></div>
+          <div><label class="fld">カテゴリ</label><select id="eg-category">${CATEGORIES.map((c) => `<option ${c === g.category ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+          <div><label class="fld">進捗（%）</label><input type="number" id="eg-progress" min="0" max="100" step="5" value="${g.progress}" /></div>
+        </div>
+        <label class="fld">達成条件</label><input type="text" id="eg-criteria" value="${esc(g.criteria)}" />
+        <label class="fld">メモ</label><textarea id="eg-memo">${esc(g.memo)}</textarea>`;
+      openModal({
+        title: '目標を編集', lead: '内容を修正して保存します。', bodyHTML: body, okLabel: '保存する',
+        onOk: async () => {
+          const title = fieldVal('eg-title').trim(); if (!title) { alert('目標名を入力してください'); return; }
+          const prog = Number(fieldVal('eg-progress')) || 0;
+          const payload = { title, purpose: fieldVal('eg-purpose'), due: fieldVal('eg-due'), category: fieldVal('eg-category'), progress: Math.max(0, Math.min(100, prog)), criteria: fieldVal('eg-criteria'), memo: fieldVal('eg-memo') };
+          try { await api('/api/goals/' + id, 'PATCH', payload); await refresh(); renderRecord(); closeModal(); toast('目標を更新しました。'); }
+          catch (e) { alert('更新に失敗しました: ' + e.message); }
+        },
+      });
+    }
+    // りなに計画を作ってもらう（目標を小さなタスクに分解し、確認後に登録）
+    function planGoal(id) {
+      const g = goals().find((x) => x.id === id); if (!g) return;
+      const steps = [
+        `${g.title}：ゴールと達成条件を明確にする`,
+        `現状を把握し、必要な要素を洗い出す`,
+        `最初の一歩（30分で終わる作業）を決めて着手`,
+        `週の中間で進捗を確認し、調整する`,
+        `仕上げて、達成条件を満たしたか確認する`,
+      ];
+      openModal({
+        title: 'りなの計画を登録しますか？',
+        lead: `「${g.title}」を達成するためのタスク候補です。ご確認のうえ登録します。`,
+        bodyHTML: steps.map((s) => `<div class="proposal">・${esc(s)}</div>`).join(''),
+        okLabel: 'タスクに登録する',
+        onOk: async () => {
+          try {
+            for (const s of steps) await api('/api/tasks', 'POST', { title: s, category: g.category, relatedGoal: g.title, priority: 'mid' });
+            await refresh(); closeModal(); toast('計画をタスクに登録しました。まず最初の一歩から。');
+          } catch (e) { alert('登録に失敗しました: ' + e.message); }
+        },
+      });
+    }
+
+    // ================= デイリーレビュー =================
+    function pickMood(m) { window._mood = m; document.querySelectorAll('#mood-row button').forEach((b, i) => b.classList.toggle('sel', i + 1 === m)); }
+    function pickSat(s) { window._sat = s; document.querySelectorAll('#sat-row button').forEach((b, i) => b.classList.toggle('sel', i + 1 <= s)); }
+    async function addDaily() {
+      const payload = {
+        date: todayStr(), did: fieldVal('d-did'), notDone: fieldVal('d-not'),
+        mood: window._mood || 3, satisfaction: window._sat || 3,
+        tomorrow: fieldVal('d-tomorrow'), free: fieldVal('d-free'),
+      };
+      if (![payload.did, payload.notDone, payload.tomorrow, payload.free].some((x) => x.trim())) { alert('振り返りの内容を入力してください'); return; }
+      try {
+        await api('/api/daily', 'POST', payload); await refresh();
+        state.dailyComment = dailyComment(payload); renderRecord(); toast('デイリーレビューを保存しました。');
+      } catch (e) { alert('保存に失敗しました: ' + e.message); }
+    }
+    function dailyComment(d) {
+      const doneToday = (state.data.tasks || []).filter((t) => t.done && t.completedAt && t.completedAt.slice(0, 10) === todayStr()).length;
+      let c = '';
+      if (doneToday) c += `今日は ${doneToday} 件のタスクを完了できました。`;
+      if ((d.mood || 3) <= 2) c += 'お疲れがたまっているかもしれません。明日は無理のない範囲で進めましょう。';
+      else if ((d.satisfaction || 3) >= 4) c += 'よい一日でしたね。この調子で続けましょう。';
+      if (d.tomorrow) c += ` 明日は「${d.tomorrow}」から始めましょうか。`;
+      return c || '記録しました。積み重ねが力になります。';
+    }
+    async function removeDaily(id) {
+      if (!confirm('このデイリーレビューを削除しますか？')) return;
+      try { await api('/api/daily/' + id, 'DELETE'); await refresh(); renderRecord(); }
+      catch (e) { alert('削除に失敗しました: ' + e.message); }
+    }
+
+    // ================= メモ（固定・整理） =================
+    async function togglePin(id, pinned) {
+      try { await api('/api/notes/' + id, 'PATCH', { pinned }); await refresh(); renderRecord(); }
+      catch (e) { alert('更新に失敗しました: ' + e.message); }
+    }
+    // りなにメモを整理してもらう（タスク候補を抽出し、確認後に登録）
+    function organizeNote(id) {
+      const n = notes().find((x) => x.id === id); if (!n) return;
+      const lines = (n.content || '').split('\n').map((s) => s.replace(/^[-・•\s]+/, '').trim()).filter((s) => s.length >= 2);
+      const summary = (n.content || '').slice(0, 60) + ((n.content || '').length > 60 ? '…' : '');
+      openModal({
+        title: 'りながメモを整理しました',
+        lead: `「${n.title || '無題'}」から、タスク候補を抽出しました。登録するものを確認してください。`,
+        bodyHTML: `<div class="proposal" style="background:transparent;border:none;padding:0 0 8px;color:var(--muted)">要約：${esc(summary) || '（本文なし）'}</div>` + (lines.length ? lines.map((s) => `<div class="proposal">・${esc(s)}</div>`).join('') : '<div class="proposal" style="color:var(--muted)">抽出できるタスクは見つかりませんでした。</div>'),
+        okLabel: lines.length ? 'タスクに登録する' : '閉じる',
+        onOk: async () => {
+          if (!lines.length) { closeModal(); return; }
+          try { for (const s of lines) await api('/api/tasks', 'POST', { title: s, category: n.category === '未分類' ? 'その他' : n.category }); await refresh(); closeModal(); toast(`${lines.length} 件をタスクに登録しました。`); }
+          catch (e) { alert('登録に失敗しました: ' + e.message); }
+        },
+      });
+    }
+
+    // ================= りな（ルールベース対話） =================
+    async function sendChat(text) {
+      text = (text || '').trim(); if (!text) return;
+      state.chat.push({ who: 'user', text });
+      const box = document.getElementById('chat-text'); if (box) box.value = '';
+      // ルールベースの応答と操作候補（データ変更は必ず確認カードで）
+      const local = rinaReply(text);
+      state.chat.push({ who: 'rina', text: '…' }); renderRina();
+      let reply = local.reply;
+      // LLMが有効なら、より自然な返答文に差し替え（キーはサーバー側のみ）
+      try { const r = await api('/api/chat', 'POST', { message: text, context: chatContext() }); if (r && r.reply) reply = r.reply; } catch (e) {}
+      state.chat[state.chat.length - 1] = { who: 'rina', text: reply };
+      renderRina();
+      if (local.proposal) setTimeout(local.proposal, 250);
+    }
+    function chatContext() {
+      const inc = incompleteTasks(); const top = pickTopTask(); const te = eventsOn(todayStr());
+      return `未完了タスク${inc.length}件、うち期限切れ${inc.filter(isOverdue).length}件、今日の予定${te.length}件。最優先タスク: ${top ? top.title : 'なし'}。`;
+    }
+    function rinaReply(text) {
+      const t = text;
+      // 予定の追加
+      if (/(予定|会議|ジム|面談|行く|訪問|アポ).*(追加|入れて|登録)|(追加|入れて).*(予定)/.test(t) || /(明日|今日|明後日).*\d/.test(t)) {
+        const p = parseWhen(t);
+        const title = guessTitle(t);
+        return {
+          reply: `承知しました。次の予定でよろしいですか？ 確認カードを表示します。`,
+          proposal: () => openModal({
+            title: '次の予定を追加しますか？', lead: '内容をご確認ください。',
+            bodyHTML: `<div class="proposal">予定：${esc(title)}<br>日付：${esc(p.date)}${p.time ? '　' + esc(p.time) : ''}</div>`,
+            okLabel: '追加する',
+            onOk: async () => { try { await api('/api/events', 'POST', { title, date: p.date, startTime: p.time || '' }); await refresh(); closeModal(); toast('予定を追加しました。'); } catch (e) { alert(e.message); } },
+          }),
+        };
+      }
+      // タスクの追加
+      if (/(タスク).*(追加|にして|登録)|(やること|todo).*(追加)/i.test(t)) {
+        const title = guessTitle(t);
+        return {
+          reply: 'タスクの登録候補を作成しました。確認カードをご覧ください。',
+          proposal: () => openModal({ title: '次のタスクを追加しますか？', lead: '内容をご確認ください。', bodyHTML: `<div class="proposal">タスク：${esc(title)}</div>`, okLabel: '追加する', onOk: async () => { try { await api('/api/tasks', 'POST', { title }); await refresh(); closeModal(); toast('タスクを追加しました。'); } catch (e) { alert(e.message); } } }),
+        };
+      }
+      // 今日やること
+      if (/(今日).*(何|やる|すれば)|やること/.test(t)) {
+        const top = pickTopTask(); const inc = incompleteTasks();
+        if (!inc.length) return { reply: '本日の未完了タスクはありません。まずは1件、決めてみましょうか。' };
+        return { reply: `未完了は ${inc.length} 件です。最優先は「${top.title}」。${(top.postponeCount || 0) > 0 ? `${top.postponeCount}回延期中なので、まず25分だけ着手してみませんか？` : 'ここから始めましょう。'}` };
+      }
+      // 今週の予定・整理
+      if (/(今週).*(予定|整理|タスク)/.test(t)) {
+        const { mon, sun } = weekRange();
+        const evs = events().filter((e) => { const d = new Date(e.date + 'T00:00:00'); return d >= mon && d <= sun; });
+        const wt = incompleteTasks().filter((x) => isThisWeek(x));
+        return { reply: `今週の予定は ${evs.length} 件、期限が今週のタスクは ${wt.length} 件です。${wt.length ? '「タスク」の“今週”フィルタで一覧できます。' : ''}` };
+      }
+      // 最近できていない
+      if (/(最近|放置).*(できて|放置|ため)/.test(t)) {
+        const stuck = incompleteTasks().filter((x) => (x.postponeCount || 0) >= 1 || isOverdue(x));
+        if (!stuck.length) return { reply: '大きく滞っているものはありません。よく整っています。' };
+        return { reply: `気になるのは：${stuck.slice(0, 3).map((x) => '「' + x.title + '」').join('、')}。まず1件だけ、今日着手しませんか？` };
+      }
+      // 振り返りまとめ
+      if (/(振り返り|今日|今週).*(まとめ|まとめて)/.test(t)) {
+        const done = (state.data.tasks || []).filter((x) => x.done).length;
+        return { reply: `これまでに ${done} 件のタスクを完了しています。「記録」→「週次」から振り返りを記録できます。` };
+      }
+      return { reply: '承知しました。例えば「明日10時にジムへ行く予定を追加して」「今日は何をすればいい？」「最近できていないことを教えて」などにお答えできます。' };
+    }
+    function parseWhen(t) {
+      const base = new Date();
+      let date = todayStr();
+      if (/明後日/.test(t)) date = ymd(addDays(base, 2));
+      else if (/明日/.test(t)) date = ymd(addDays(base, 1));
+      else if (/今日/.test(t)) date = todayStr();
+      const m = t.match(/(\d{1,2})\s*時(?:\s*(\d{1,2})\s*分)?/);
+      let time = '';
+      if (m) time = pad(Number(m[1])) + ':' + pad(Number(m[2] || 0));
+      else { const m2 = t.match(/(\d{1,2}):(\d{2})/); if (m2) time = pad(Number(m2[1])) + ':' + m2[2]; }
+      return { date, time };
+    }
+    function guessTitle(t) {
+      let s = t.replace(/(明日|今日|明後日)/g, '').replace(/\d{1,2}\s*時(\s*\d{1,2}\s*分)?/g, '').replace(/\d{1,2}:\d{2}/g, '')
+        .replace(/(に|へ|を|の)?\s*(予定|タスク|todo)?\s*(を)?\s*(追加|入れて|登録|にして)(して)?/gi, '').trim();
+      s = s.replace(/^[\sにへをでの、,]+/, '').trim(); // 先頭に残る助詞を除去
+      return s || '新しい予定';
+    }
+
+    // ================= 通知 =================
+    async function requestNotify() {
+      if (typeof Notification === 'undefined') { alert('この環境はブラウザ通知に対応していません。'); return; }
+      try { await Notification.requestPermission(); renderRecord(); } catch (e) {}
+    }
+    async function savePrefs(patch) {
+      const notify = { ...notifyPrefs(), ...patch };
+      state.data.prefs = { ...(state.data.prefs || {}), notify };
+      try { await api('/api/prefs', 'PATCH', { notify }); } catch (e) {}
+    }
+    function toggleNotify(k) { const p = notifyPrefs(); savePrefs({ [k]: !p[k] }).then(() => renderRecord()); }
+    function setNotifyTime(k, v) { savePrefs({ [k]: v }); }
+
+    let firedKeys = null;
+    function loadFired() { if (firedKeys) return firedKeys; try { firedKeys = new Set(JSON.parse(localStorage.getItem('rina-fired') || '[]')); } catch (e) { firedKeys = new Set(); } return firedKeys; }
+    function markFired(k) { const s = loadFired(); s.add(k); try { localStorage.setItem('rina-fired', JSON.stringify([...s].slice(-200))); } catch (e) {} }
+    function notify(title, body) {
+      toast(body || title);
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') { try { new Notification(title, { body, icon: '/icon.svg' }); } catch (e) {} }
+    }
+    function scanReminders() {
+      if (!state.data) return;
+      const p = notifyPrefs(); const now = new Date(); const nowMin = now.getHours() * 60 + now.getMinutes(); const today = todayStr();
+      // 予定前の通知
+      if (p.eventBefore) {
+        eventsOn(today).forEach((e) => {
+          const s = timeToMin(e.startTime); if (s == null) return;
+          const lead = e.notifyMin || 30;
+          if (s - nowMin <= lead && s - nowMin >= 0) { const key = 'ev' + e.id + today; if (!loadFired().has(key)) { markFired(key); notify('まもなく予定', `${e.startTime} ${e.title}${e.place ? '（' + e.place + '）' : ''}`); } }
+        });
+      }
+      // 朝のブリーフィング / 夜の振り返り
+      const hitTime = (label) => label ? (timeToMin(label) != null && Math.abs(nowMin - timeToMin(label)) <= 1) : false;
+      if (p.morning && hitTime(p.morningTime)) { const key = 'am' + today; if (!loadFired().has(key)) { markFired(key); notify('おはようございます', `${USER}、本日の予定と優先事項をまとめました。`); } }
+      if (p.night && hitTime(p.nightTime)) { const key = 'pm' + today; if (!loadFired().has(key)) { markFired(key); notify('本日もお疲れさまでした', '3分だけ、今日の振り返りをしませんか？'); } }
+    }
+
+    // ================= フォーカスタイマー（25分集中） =================
+    function startFocus(taskId, minutes) {
+      const t = taskId ? (state.data.tasks || []).find((x) => x.id === taskId) : null;
+      const total = (minutes || 25) * 60;
+      if (state.timer && state.timer.intervalId) clearInterval(state.timer.intervalId);
+      state.timer = { taskId, name: t ? t.title : '集中タイム', total, remaining: total, paused: false, intervalId: null };
+      document.getElementById('focus-name').textContent = state.timer.name;
+      document.getElementById('focus').classList.add('show');
+      renderFocus();
+      state.timer.intervalId = setInterval(tickFocus, 1000);
+      toast('25分の集中を始めます。まずはこの一つだけに。');
+    }
+    function tickFocus() {
+      const tm = state.timer; if (!tm || tm.paused) return;
+      tm.remaining--;
+      if (tm.remaining <= 0) {
+        clearInterval(tm.intervalId); renderFocus();
+        notify('集中おつかれさまでした', '5分ほど休みましょう。よく進みました。');
+        document.getElementById('focus').classList.remove('show'); state.timer = null; return;
+      }
+      renderFocus();
+    }
+    function renderFocus() {
+      const tm = state.timer; if (!tm) return;
+      document.getElementById('focus-time').textContent = pad(Math.floor(tm.remaining / 60)) + ':' + pad(tm.remaining % 60);
+      document.getElementById('focus-bar').style.width = ((tm.total - tm.remaining) / tm.total * 100) + '%';
+      document.getElementById('focus-toggle').textContent = tm.paused ? '再開' : '一時停止';
+    }
+    function toggleFocus() { if (!state.timer) return; state.timer.paused = !state.timer.paused; renderFocus(); }
+    function stopFocus() { if (state.timer && state.timer.intervalId) clearInterval(state.timer.intervalId); state.timer = null; document.getElementById('focus').classList.remove('show'); }
+
+    // ================= 全体検索 =================
+    function openSearch() { document.getElementById('search-overlay').classList.add('show'); const i = document.getElementById('search-input'); i.value = ''; runSearch(''); setTimeout(() => i.focus(), 50); }
+    function closeSearch() { document.getElementById('search-overlay').classList.remove('show'); }
+    function runSearch(q) {
+      q = (q || '').trim().toLowerCase();
+      const el = document.getElementById('search-results');
+      if (!q) { el.innerHTML = '<div class="search-empty">キーワードを入力してください。</div>'; return; }
+      const res = [];
+      (state.data.tasks || []).forEach((t) => { if ((t.title + ' ' + t.detail).toLowerCase().includes(q)) res.push({ kind: 'タスク', title: t.title, sub: (t.done ? '完了・' : '') + (t.category || ''), go: () => { state.taskFilter = t.done ? 'done' : 'all'; go('tasks'); } }); });
+      notes().forEach((n) => { if ((n.title + ' ' + n.content + ' ' + (n.tags || []).join(' ')).toLowerCase().includes(q)) res.push({ kind: 'メモ', title: n.title || '（無題）', sub: n.category, go: () => { go('record'); setRecordTab('notes'); } }); });
+      events().forEach((e) => { if ((e.title + ' ' + e.place + ' ' + e.detail).toLowerCase().includes(q)) res.push({ kind: '予定', title: e.title, sub: e.date + (e.startTime ? ' ' + e.startTime : ''), go: () => { state.calCursor = new Date(e.date + 'T00:00:00'); state.calView = 'day'; go('calendar'); } }); });
+      goals().forEach((g) => { if ((g.title + ' ' + g.purpose).toLowerCase().includes(q)) res.push({ kind: '目標', title: g.title, sub: '進捗 ' + g.progress + '%', go: () => { go('record'); setRecordTab('goals'); } }); });
+      if (!res.length) { el.innerHTML = '<div class="search-empty">一致する項目はありません。</div>'; return; }
+      window._searchRes = res.slice(0, 40);
+      el.innerHTML = window._searchRes.map((r, i) => `<div class="sr" data-i="${i}"><span class="kind">${r.kind}</span><div class="txt"><div class="st">${esc(r.title)}</div><div class="ss">${esc(r.sub || '')}</div></div></div>`).join('');
+      el.querySelectorAll('.sr').forEach((node) => { node.onclick = () => { const r = window._searchRes[+node.dataset.i]; closeSearch(); r.go(); }; });
+    }
+
+    // ================= バックアップ（書き出し／読み込み） =================
+    async function exportData() {
+      try {
+        const data = await api('/api/data');
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob); const a = document.createElement('a');
+        a.href = url; a.download = 'rina-backup-' + todayStr() + '.json'; a.click();
+        URL.revokeObjectURL(url); toast('バックアップを書き出しました。');
+      } catch (e) { alert('書き出しに失敗しました: ' + e.message); }
+    }
+    function importData(input) {
+      const file = input.files && input.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        let obj; try { obj = JSON.parse(reader.result); } catch (e) { alert('JSONの読み込みに失敗しました。'); return; }
+        const counts = ['tasks', 'notes', 'events', 'goals', 'reviews', 'dailyReviews'].map((k) => `${k}: ${Array.isArray(obj[k]) ? obj[k].length : 0}`).join(' / ');
+        openModal({
+          title: 'このバックアップで置き換えますか？', lead: '現在のデータはすべて上書きされます。心配な場合は先に書き出しておきましょう。',
+          bodyHTML: `<div class="proposal">${esc(counts)}</div>`, okLabel: '置き換える',
+          onOk: async () => { try { await api('/api/import', 'POST', obj); await refresh(); closeModal(); toast('バックアップを読み込みました。'); } catch (e) { alert('読み込みに失敗しました: ' + e.message); } },
+        });
+      };
+      reader.readAsText(file); input.value = '';
+    }
+
+    // 期限切れのナビバッジを更新
+    function updateBadges() {
+      const over = state.data ? incompleteTasks().filter(isOverdue).length : 0;
+      const html = over ? `<span class="navbadge">${over}</span>` : '';
+      const s = document.getElementById('badge-tasks-side'); if (s) s.innerHTML = html;
+      const b = document.getElementById('badge-tasks-bn'); if (b) b.innerHTML = html;
+    }
+
+    // ================= モーダル・トースト =================
+    let modalOk = null;
+    function openModal({ title, lead, bodyHTML, okLabel, onOk }) {
+      document.getElementById('modal-title').textContent = title;
+      document.getElementById('modal-lead').textContent = lead || '';
+      document.getElementById('modal-body').innerHTML = bodyHTML || '';
+      const ok = document.getElementById('modal-ok'); ok.textContent = okLabel || '実行する';
+      modalOk = onOk; document.getElementById('overlay').classList.add('show');
+    }
+    function closeModal() { document.getElementById('overlay').classList.remove('show'); modalOk = null; }
+    document.getElementById('modal-ok').addEventListener('click', () => { if (modalOk) modalOk(); });
+    document.getElementById('overlay').addEventListener('click', (e) => { if (e.target.id === 'overlay') closeModal(); });
+    document.getElementById('search-overlay').addEventListener('click', (e) => { if (e.target.id === 'search-overlay') closeSearch(); });
+
+    let toastTimer = null;
+    function toast(msg, action) {
+      document.getElementById('toast-msg').textContent = msg;
+      const el = document.getElementById('toast'); const btn = document.getElementById('toast-action');
+      if (action && action.label && typeof action.fn === 'function') {
+        btn.textContent = action.label; btn.style.display = '';
+        btn.onclick = () => { el.classList.remove('show'); action.fn(); };
+      } else { btn.style.display = 'none'; btn.onclick = null; }
+      el.classList.add('show');
+      clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), action ? 6000 : 3200);
+    }
+
+    // ================= 更新 =================
+    async function refresh() { state.data = await api('/api/data'); renderCurrent(); }
+
+    // メモ検索（フォーカスを保ちながら絞り込み）
+    function onNoteSearch(v) {
+      state.noteSearch = v; renderRecord();
+      const box = document.getElementById('n-search');
+      if (box) { box.focus(); const len = box.value.length; box.setSelectionRange(len, len); }
+    }
+
+    // PWA: Service Worker 登録
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+
+    // 起動
+    (async function boot() {
+      await loadData();
+      scanReminders();
+      setInterval(scanReminders, 60000); // 1分ごとにリマインダーを確認
+    })();
+  </script>
+</body>
+</html>

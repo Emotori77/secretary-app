@@ -1,0 +1,10 @@
+# 個人データ（メモ・タスク・予定など）は公開しない
+data.json
+
+# macOS / エディタ
+.DS_Store
+*.swp
+
+# Node（このプロジェクトでは未使用だが念のため）
+node_modules/
+npm-debug.log
