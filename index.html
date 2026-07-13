@@ -775,17 +775,23 @@
              <div class="actions" style="margin-top:14px"><button class="btn" onclick="go('tasks')">タスクを追加</button></div>`}
         </div>
 
-        <div class="grid cols-2" style="margin-top:14px">
-          <div class="card">
-            <div class="prog">
-              ${ringSVG(prog.pct)}
-              <div><div class="big">${prog.pct}%</div><div class="lbl">${prog.total ? `本日 ${prog.done}/${prog.total} 完了` : '本日の対象タスクなし'}</div></div>
-            </div>
+        <div class="card" style="margin-top:14px">
+          <div class="prog">
+            ${ringSVG(prog.pct)}
+            <div><div class="big">${prog.pct}%</div><div class="lbl">${prog.total ? `本日 ${prog.done}/${prog.total} 完了` : '本日の対象タスクなし'}</div></div>
           </div>
+        </div>
+
+        <div class="grid cols-2" style="margin-top:14px">
           <div class="card">
             <div class="lbl" style="color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.08em">完了タスク件数</div>
             <div class="big" style="font-size:30px;font-weight:800;margin-top:6px">${(state.data.tasks || []).filter((t) => t.done).length}<span style="font-size:14px;color:var(--muted);font-weight:600"> 件</span></div>
-            ${prog.done ? `<div class="chip" style="margin-top:8px;display:inline-block">本日 ${prog.done} 件完了</div>` : (overdue.length ? `<div class="due overdue" style="margin-top:8px;display:inline-block">未完了の期限超過 ${overdue.length} 件</div>` : '')}
+            ${prog.done ? `<div class="chip" style="margin-top:8px;display:inline-block">本日 ${prog.done} 件完了</div>` : ''}
+          </div>
+          <div class="card">
+            <div class="lbl" style="color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.08em">未完了タスク件数</div>
+            <div class="big" style="font-size:30px;font-weight:800;margin-top:6px">${inc.length}<span style="font-size:14px;color:var(--muted);font-weight:600"> 件</span></div>
+            ${overdue.length ? `<div class="due overdue" style="margin-top:8px;display:inline-block">期限超過 ${overdue.length} 件</div>` : ''}
           </div>
         </div>
 
